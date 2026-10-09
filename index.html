@@ -2,6 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>داشبورد اختیار معامله</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -11,8 +12,9 @@
   h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-top: 30px; }
   h3 { color: #34495e; margin-top: 25px; }
   .tabs { display: flex; gap: 5px; margin: 20px 0; border-bottom: 2px solid #34495e; flex-wrap: wrap; }
-  .tab { padding: 10px 18px; background: #ecf0f1; border: none; cursor: pointer; font-family: inherit; font-size: 13px; border-radius: 8px 8px 0 0; }
-  .tab.active { background: #34495e; color: white; font-weight: bold; }
+  .tab { padding: 10px 18px; background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; cursor: pointer; font-family: inherit; font-size: 13px; border-radius: 8px 8px 0 0; transition: all 0.2s; margin-left: 3px; margin-bottom: 2px; font-weight: 500; }
+  .tab:hover { background: linear-gradient(135deg, #2980b9, #1f618d); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4); }
+  .tab.active { background: linear-gradient(135deg, #27ae60, #229954); color: white; font-weight: bold; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.5); transform: translateY(-2px); }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
   .big-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
@@ -126,17 +128,102 @@
   .sync-status.connected { background: #eafaf1; color: #1e8449; border-right: 5px solid #27ae60; }
   .sync-status.disconnected { background: #fdecea; color: #c0392b; border-right: 5px solid #e74c3c; }
   .sync-status.syncing { background: #eaf2f8; color: #1a5276; border-right: 5px solid #3498db; }
+  /* ===== ساعت و تاریخ ===== */
+  .top-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: linear-gradient(135deg, #ffffff, #f0f4f8); padding: 12px 18px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 15px; }
+  .clock-box { display: flex; flex-direction: column; align-items: flex-start; background: linear-gradient(135deg, #3498db, #9b59b6); color: white; padding: 8px 16px; border-radius: 10px; min-width: 140px; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3); }
+  .clock-time { font-size: 20px; font-weight: bold; font-family: Consolas, monospace; letter-spacing: 1.5px; direction: ltr; }
+  .clock-date { font-size: 11.5px; opacity: 0.95; margin-top: 2px; }
+  .status-info { color: #7f8c8d; font-size: 12px; text-align: left; flex: 1; }
+  /* ===== Responsive برای موبایل ===== */
+  @media (max-width: 768px) {
+    body { padding: 8px; font-size: 13px; }
+    h1 { font-size: 17px; margin-bottom: 6px; }
+    h2 { font-size: 15px; margin-top: 20px; padding-bottom: 6px; }
+    h3 { font-size: 14px; margin-top: 18px; }
+    .tabs { gap: 2px; margin: 12px 0; }
+    .tab { padding: 7px 10px; font-size: 10.5px; margin-left: 2px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+    .kpi-card { padding: 10px 8px; gap: 6px; border-radius: 10px; border-right-width: 4px; }
+    .kpi-card .kpi-icon { font-size: 18px; }
+    .kpi-card .kpi-label { font-size: 9.5px; margin-bottom: 3px; }
+    .kpi-card .kpi-value { font-size: 12px; letter-spacing: -0.5px; }
+    .dash-grid { grid-template-columns: 1fr; gap: 12px; }
+    .dash-chart { padding: 12px; }
+    .dash-chart h3 { font-size: 13px; }
+    .dash-chart .chart-inner { height: 220px; }
+    .big-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+    .big-card { padding: 12px 8px; border-radius: 10px; }
+    .big-card .label { font-size: 10.5px; margin-bottom: 6px; }
+    .big-card .value { font-size: 15px; }
+    .section-title { font-size: 14px; padding: 8px 10px; margin: 18px 0 8px; }
+    table { font-size: 11px; }
+    th { padding: 6px 3px; font-size: 10px; }
+    td { padding: 5px 3px; font-size: 11px; }
+    .num { font-size: 11px; }
+    input, select { font-size: 12px; padding: 5px 6px; }
+    button { font-size: 11px; padding: 6px 12px; }
+    button.small { font-size: 10px; padding: 4px 8px; }
+    .btn-row { gap: 6px; margin: 10px 0; }
+    .sort-bar { padding: 10px; gap: 8px; }
+    .sort-bar label { font-size: 11px; }
+    .sort-bar select, .sort-bar input { min-width: 100%; font-size: 12px; padding: 6px 8px; }
+    .sort-item { min-width: 100%; }
+    .meta-bar { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+    .meta-bar .field label { font-size: 11px; }
+    .meta-bar .field input, .meta-bar .field select { font-size: 12px; padding: 6px 8px; }
+    .summary-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .summary-cards .mini-card { padding: 10px; }
+    .summary-cards .mini-card .mini-label { font-size: 10px; }
+    .summary-cards .mini-card .mini-value { font-size: 13px; }
+    .chart-container { padding: 12px; }
+    .chart-wrap { height: 280px; }
+    .field-row { flex-direction: column; align-items: stretch; gap: 6px; padding: 10px; }
+    .field-row label { min-width: auto; font-size: 12px; }
+    .field-row input { max-width: 100%; }
+    .helper { font-size: 11px; padding: 8px; }
+    .badge { font-size: 9.5px; padding: 2px 6px; }
+    .gauge-center .gauge-value { font-size: 18px; }
+    .gauge-center .gauge-label { font-size: 10px; }
+    .archive-filter { padding: 12px; }
+    .archive-filter .grid { grid-template-columns: 1fr; gap: 8px; }
+    .archive-filter .field label { font-size: 11px; }
+    .collapsible-header { font-size: 13px; padding: 10px 12px; }
+    .toggle-switch { font-size: 11.5px; padding: 5px 8px; }
+    .alert-strip { font-size: 12px; padding: 10px 12px; }
+    .sync-status { font-size: 12px; padding: 10px 12px; }
+    .legend-chart { font-size: 10.5px; gap: 10px; }
+    .legend-chart .dot { width: 11px; height: 11px; }
+    .top-info { flex-direction: column; padding: 10px; gap: 8px; }
+    .clock-box { width: 100%; align-items: center; padding: 8px; min-width: auto; }
+    .clock-time { font-size: 18px; }
+    .clock-date { font-size: 11px; }
+    .status-info { text-align: center; font-size: 11px; width: 100%; }
+  }
+  @media (max-width: 400px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .big-cards { grid-template-columns: 1fr 1fr; }
+    .kpi-card .kpi-value { font-size: 12px; }
+  }
 </style>
 </head>
 <body>
 
 <h1>📊 داشبورد مدیریت اختیار معامله</h1>
-<p style="color:#7f8c8d;">آخرین به‌روزرسانی: <span id="lastUpdate"></span> | <span id="syncIndicator"></span></p>
+<div class="top-info">
+  <div class="clock-box">
+    <span id="liveClock" class="clock-time">--:--:--</span>
+    <span id="liveDate" class="clock-date">---</span>
+  </div>
+  <div class="status-info">
+    آخرین به‌روزرسانی: <span id="lastUpdate"></span>
+    <span id="syncIndicator"></span>
+  </div>
+</div>
 <div id="debugLog"></div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('dashboard', event)">📊 داشبورد</button>
-  <button class="tab" onclick="switchTab('input', event)">📝 ثبت معاملات</button>
+  <button class="tab" onclick="switchTab('input', event)">📝 معاملات</button>
   <button class="tab" onclick="switchTab('diagnose', event)">🔬 تشخیص</button>
   <button class="tab" onclick="switchTab('openPos', event)">📈 باز</button>
   <button class="tab" onclick="switchTab('summary', event)">📋 خلاصه</button>
@@ -395,52 +482,25 @@
 <!-- ==================== GitHub Sync ==================== -->
 <div id="sync" class="tab-content">
   <h2>☁️ سینک با GitHub</h2>
-  <div class="helper">
-    برای اینکه داشبوردت بین همه دستگاه‌ها (گوشی، لپ‌تاپ، ...) همگام بشه، این تنظیمات رو انجام بده. <br>
-    <b>توکن GitHub رو فقط یه بار اینجا وارد کن. به صورت امن تو مرورگر همون دستگاه ذخیره می‌شه.</b>
-  </div>
-
+  <div class="helper">توکن GitHub رو فقط یه بار وارد کن. به صورت امن تو مرورگر ذخیره می‌شه.</div>
   <div id="syncStatusBox"></div>
-
   <h3>⚙️ تنظیمات</h3>
-  <div class="field-row">
-    <label>یوزرنیم GitHub:</label>
-    <input type="text" id="ghUsername" value="m12rezai-eng" placeholder="m12rezai-eng" />
-  </div>
-  <div class="field-row">
-    <label>اسم Repository:</label>
-    <input type="text" id="ghRepo" value="bourse-dashboard" placeholder="bourse-dashboard" />
-  </div>
-  <div class="field-row">
-    <label>توکن GitHub:</label>
-    <input type="password" id="ghToken" placeholder="ghp_..." style="max-width:400px;" />
-  </div>
+  <div class="field-row"><label>یوزرنیم GitHub:</label><input type="text" id="ghUsername" value="m12rezai-eng" /></div>
+  <div class="field-row"><label>اسم Repository:</label><input type="text" id="ghRepo" value="bourse-dashboard" /></div>
+  <div class="field-row"><label>توکن GitHub:</label><input type="password" id="ghToken" placeholder="ghp_..." /></div>
   <div class="btn-row">
     <button class="success" onclick="ghConnect()">🔗 اتصال</button>
     <button class="gray" onclick="ghDisconnect()">🔌 قطع اتصال</button>
   </div>
-
   <h3>🔄 عملیات دستی</h3>
   <div class="btn-row">
     <button class="purple" onclick="ghSave()">📤 آپلود به GitHub</button>
     <button class="purple" onclick="ghLoad()">📥 دانلود از GitHub</button>
   </div>
-
   <h3>⚡ سینک خودکار</h3>
-  <div class="field-row">
-    <label class="toggle-switch"><input type="checkbox" id="ghAutoSync" onchange="ghToggleAutoSync()" /> فعال باشد (هر ۳۰ ثانیه چک می‌کند)</label>
-  </div>
-
+  <div class="field-row"><label class="toggle-switch"><input type="checkbox" id="ghAutoSync" onchange="ghToggleAutoSync()" /> فعال باشد (هر ۳۰ ثانیه چک می‌کند)</label></div>
   <h3>📋 گزارش آخرین عملیات</h3>
   <div id="ghLog" class="helper" style="direction: ltr; text-align: left; font-family: Consolas, monospace; max-height: 250px; overflow-y: auto;"></div>
-
-  <div class="helper" style="margin-top: 20px; background: #fef5e7;">
-    <b>راهنمای استفاده:</b><br>
-    ۱. توکن رو پیست کن و «اتصال» رو بزن<br>
-    ۲. اگه موفق بود، تیک «سینک خودکار» رو بزن<br>
-    ۳. از این به بعد هر تغییری تو هر دستگاهی بدی، خودکار به GitHub می‌ره و از اونجا به دستگاه‌های دیگه میاد<br>
-    ۴. دکمه «دانلود از GitHub» رو بزن اگه می‌خوای آخرین داده‌ها رو از سرور بگیری
-  </div>
 </div>
 
 <!-- ==================== تنظیمات ==================== -->
@@ -454,9 +514,7 @@
     <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)" />
   </div>
   <h2 style="color:#e74c3c;">⚠️ ناحیه خطر</h2>
-  <div class="btn-row">
-    <button class="danger" onclick="fullReset()">🗑 پاک کردن کل حافظه</button>
-  </div>
+  <div class="btn-row"><button class="danger" onclick="fullReset()">🗑 پاک کردن کل حافظه</button></div>
 </div>
 
 <div class="footer">ساخته‌شده با ❤️</div>
@@ -471,8 +529,6 @@ const STORAGE_KEY = 'optionDashboard_v14';
 const GH_CONFIG_KEY = 'optionDashboard_ghConfig';
 let state = { trades: [], strategyLegs: [], archivedItems: [], strategyMeta: { symbol: '', expiry: '', currentPrice: 0 }, settings: { cash: 9760000000, marginPercent: 20 } };
 let cachedOpenLots = [], cachedClosedLots = [], currentBreakevens = [], charts = {};
-
-// ===== GitHub Sync State =====
 let ghConfig = { username: '', repo: '', token: '', connected: false, autoSync: false };
 let ghLastSha = null;
 let ghAutoSyncTimer = null;
@@ -480,13 +536,9 @@ let ghSaveTimer = null;
 
 function loadGhConfig() {
   const raw = localStorage.getItem(GH_CONFIG_KEY);
-  if (raw) {
-    try { ghConfig = JSON.parse(raw); } catch(e) {}
-  }
+  if (raw) { try { ghConfig = JSON.parse(raw); } catch(e) {} }
 }
-function saveGhConfig() {
-  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(ghConfig));
-}
+function saveGhConfig() { localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(ghConfig)); }
 function ghLog(msg, isError) {
   const el = document.getElementById('ghLog');
   if (!el) return;
@@ -500,93 +552,60 @@ function ghUpdateStatus() {
   if (!box) return;
   if (ghConfig.connected) {
     box.innerHTML = `<div class="sync-status connected">✅ متصل به github.com/${ghConfig.username}/${ghConfig.repo}</div>`;
-    if (ind) ind.innerHTML = '<span style="color:#27ae60;">☁️ متصل</span>';
+    if (ind) ind.innerHTML = '<span style="color:#27ae60;"> | ☁️ متصل</span>';
   } else {
     box.innerHTML = `<div class="sync-status disconnected">❌ قطع - برای فعال‌سازی سینک، توکن رو وارد کن</div>`;
     if (ind) ind.innerHTML = '';
   }
 }
-
 function ghApi(method, path, body) {
   const url = `https://api.github.com/repos/${ghConfig.username}/${ghConfig.repo}/contents/${path}`;
-  const headers = {
-    'Authorization': `token ${ghConfig.token}`,
-    'Accept': 'application/vnd.github.v3+json',
-    'Content-Type': 'application/json'
-  };
+  const headers = { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
   const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
   return fetch(url, opts).then(async res => {
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg = data.message || `HTTP ${res.status}`;
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
     return data;
   });
 }
-
 async function ghConnect() {
   const u = document.getElementById('ghUsername').value.trim();
   const r = document.getElementById('ghRepo').value.trim();
   const t = document.getElementById('ghToken').value.trim();
   if (!u || !r || !t) { alert('همه فیلدها رو پر کن'); return; }
-  ghConfig.username = u;
-  ghConfig.repo = r;
-  ghConfig.token = t;
+  ghConfig.username = u; ghConfig.repo = r; ghConfig.token = t;
   ghLog('در حال تست اتصال...');
   try {
     await ghApi('GET', 'README.md');
     ghConfig.connected = true;
-    saveGhConfig();
-    ghUpdateStatus();
-    ghLog('✅ اتصال موفق!');
+    saveGhConfig(); ghUpdateStatus(); ghLog('✅ اتصال موفق!');
     await ghLoad();
   } catch(e) {
     ghConfig.connected = false;
-    saveGhConfig();
-    ghUpdateStatus();
-    ghLog('❌ خطا در اتصال: ' + e.message, true);
+    saveGhConfig(); ghUpdateStatus();
+    ghLog('❌ خطا: ' + e.message, true);
     alert('اتصال ناموفق: ' + e.message);
   }
 }
-
-function ghDisconnect() {
-  ghConfig.connected = false;
-  saveGhConfig();
-  ghUpdateStatus();
-  ghLog('🔌 اتصال قطع شد');
-}
-
+function ghDisconnect() { ghConfig.connected = false; saveGhConfig(); ghUpdateStatus(); ghLog('🔌 قطع شد'); }
 async function ghSave() {
   if (!ghConfig.connected) { alert('اول وصل شو'); return; }
-  ghLog('📤 در حال آپلود...');
+  ghLog('📤 آپلود...');
   try {
-    // پیدا کردن SHA فعلی
     let sha = null;
-    try {
-      const existing = await ghApi('GET', 'data.json');
-      sha = existing.sha;
-    } catch(e) { /* فایل وجود نداره، اشکالی نداره */ }
-
+    try { const existing = await ghApi('GET', 'data.json'); sha = existing.sha; } catch(e) {}
     const content = JSON.stringify(state, null, 2);
     const b64 = btoa(unescape(encodeURIComponent(content)));
-    const body = {
-      message: `sync: ${new Date().toISOString()}`,
-      content: b64,
-      sha: sha || undefined
-    };
+    const body = { message: `sync: ${new Date().toISOString()}`, content: b64, sha: sha || undefined };
     const result = await ghApi('PUT', 'data.json', body);
     ghLastSha = result.content.sha;
-    ghLog('✅ آپلود موفق - ' + new Date().toLocaleTimeString('fa-IR'));
-  } catch(e) {
-    ghLog('❌ خطای آپلود: ' + e.message, true);
-  }
+    ghLog('✅ آپلود موفق');
+  } catch(e) { ghLog('❌ خطا: ' + e.message, true); }
 }
-
 async function ghLoad() {
   if (!ghConfig.connected) { alert('اول وصل شو'); return; }
-  ghLog('📥 در حال دانلود...');
+  ghLog('📥 دانلود...');
   try {
     const data = await ghApi('GET', 'data.json');
     ghLastSha = data.sha;
@@ -598,31 +617,26 @@ async function ghLoad() {
     state.settings = parsed.settings || { cash: 0, marginPercent: 20 };
     state.archivedItems = parsed.archivedItems || [];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    render();
-    renderStrategyMeta();
-    ghLog('✅ دانلود موفق - ' + new Date().toLocaleTimeString('fa-IR'));
+    render(); renderStrategyMeta();
+    ghLog('✅ دانلود موفق');
   } catch(e) {
-    if (e.message.includes('Not Found')) {
-      ghLog('📭 هنوز داده‌ای روی GitHub نیست - اولین آپلود رو انجام بده');
-    } else {
-      ghLog('❌ خطای دانلود: ' + e.message, true);
-    }
+    if (e.message.includes('Not Found')) ghLog('📭 هنوز داده‌ای نیست');
+    else ghLog('❌ خطا: ' + e.message, true);
   }
 }
-
 function ghToggleAutoSync() {
   const cb = document.getElementById('ghAutoSync');
   ghConfig.autoSync = cb.checked;
   saveGhConfig();
   if (ghConfig.autoSync) {
-    ghLog('⚡ سینک خودکار فعال شد');
+    ghLog('⚡ سینک خودکار فعال');
     if (ghAutoSyncTimer) clearInterval(ghAutoSyncTimer);
     ghAutoSyncTimer = setInterval(async () => {
       if (!ghConfig.connected) return;
       try {
         const data = await ghApi('GET', 'data.json');
         if (data.sha !== ghLastSha) {
-          ghLog('🔄 تغییر جدید روی سرور پیدا شد - در حال دانلود...');
+          ghLog('🔄 تغییر جدید - دانلود...');
           ghLastSha = data.sha;
           const content = decodeURIComponent(escape(atob(data.content)));
           const parsed = JSON.parse(content);
@@ -632,30 +646,26 @@ function ghToggleAutoSync() {
           state.settings = parsed.settings || { cash: 0, marginPercent: 20 };
           state.archivedItems = parsed.archivedItems || [];
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          render();
-          renderStrategyMeta();
-          ghLog('✅ تغییرات از سرور اعمال شد');
+          render(); renderStrategyMeta();
+          ghLog('✅ اعمال شد');
         }
-      } catch(e) { /* ignore */ }
+      } catch(e) {}
     }, 30000);
   } else {
-    ghLog('⚡ سینک خودکار غیرفعال شد');
+    ghLog('⚡ غیرفعال شد');
     if (ghAutoSyncTimer) { clearInterval(ghAutoSyncTimer); ghAutoSyncTimer = null; }
   }
 }
-
 function ghAutoSave() {
   if (!ghConfig.connected) return;
   if (ghSaveTimer) clearTimeout(ghSaveTimer);
   ghSaveTimer = setTimeout(() => { ghSave(); }, 3000);
 }
 
-// ============ State Functions ============
 function genId() { return 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
 function makeClosedKey(c) { return `${c.entryOrder}_${c.exitOrder}_${c.code}_${c.type}_${c.entryPrice}_${c.exitPrice}_${c.qty}`; }
 function isArchived(k) { return state.archivedItems.some(x => x.key === k); }
 function getArchiveInfo(k) { return state.archivedItems.find(x => x.key === k); }
-
 function normalizeOption(opt) {
   if (!opt) return '';
   let s = String(opt);
@@ -886,22 +896,10 @@ function renderDashboard(openLots, closedLots) {
       const total = r.buyCallEx + r.sellPutEx - r.sellPutMargin + r.sellCallMargin;
       t1 += r.buyCallEx; t2 += r.sellPutEx; tPutM += r.sellPutMargin; t3 += r.sellCallMargin; tAll += total; tBase += r.baseShares;
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><b class="num">${r.expiry}</b></td>
-        <td class="num">${formatNum(r.buyCallEx)}</td>
-        <td class="num">${formatNum(r.sellPutEx)}</td>
-        <td class="num" style="color:#e67e22;">−${formatNum(r.sellPutMargin)}</td>
-        <td class="num">${formatNum(r.sellCallMargin)}</td>
-        <td class="num"><b style="color:#e74c3c;">${formatNum(total)}</b></td>
-        <td class="num">${formatNum(r.baseShares)}</td>
-      `;
+      tr.innerHTML = `<td><b class="num">${r.expiry}</b></td><td class="num">${formatNum(r.buyCallEx)}</td><td class="num">${formatNum(r.sellPutEx)}</td><td class="num" style="color:#e67e22;">−${formatNum(r.sellPutMargin)}</td><td class="num">${formatNum(r.sellCallMargin)}</td><td class="num"><b style="color:#e74c3c;">${formatNum(total)}</b></td><td class="num">${formatNum(r.baseShares)}</td>`;
       tbody.appendChild(tr);
     }
-    tfoot.innerHTML = `<tr style="background:#34495e;color:white;font-weight:bold;">
-      <td>جمع کل</td><td class="num">${formatNum(t1)}</td><td class="num">${formatNum(t2)}</td>
-      <td class="num" style="color:#f39c12;">−${formatNum(tPutM)}</td>
-      <td class="num">${formatNum(t3)}</td><td class="num">${formatNum(tAll)}</td><td class="num">${formatNum(tBase)}</td>
-    </tr>`;
+    tfoot.innerHTML = `<tr style="background:#34495e;color:white;font-weight:bold;"><td>جمع کل</td><td class="num">${formatNum(t1)}</td><td class="num">${formatNum(t2)}</td><td class="num" style="color:#f39c12;">−${formatNum(tPutM)}</td><td class="num">${formatNum(t3)}</td><td class="num">${formatNum(tAll)}</td><td class="num">${formatNum(tBase)}</td></tr>`;
   }
 }
 
@@ -920,19 +918,7 @@ function renderInput() {
     if (filterDir && normalizeDirection(t.direction) !== filterDir) return;
     if (filterExpiry && t.expiry !== filterExpiry) return;
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td><select onchange="updateTrade('${t.id}', 'direction', this.value)"><option value="خرید" ${t.direction === 'خرید' ? 'selected' : ''}>خرید</option><option value="فروش" ${t.direction === 'فروش' ? 'selected' : ''}>فروش</option></select></td>
-      <td><select onchange="updateTrade('${t.id}', 'type', this.value)"><option value="call" ${t.type === 'call' ? 'selected' : ''}>call</option><option value="put" ${t.type === 'put' ? 'selected' : ''}>put</option></select></td>
-      <td><input value="${t.symbol || ''}" onchange="updateTrade('${t.id}', 'symbol', this.value)" list="symbolList2" /></td>
-      <td><input value="${t.option || ''}" onchange="onOptionChange('${t.id}', this.value)" list="optionList" /></td>
-      <td><input value="${t.expiry || ''}" onchange="updateTrade('${t.id}', 'expiry', this.value)" /></td>
-      <td><input type="number" value="${t.strike || 0}" onchange="updateTrade('${t.id}', 'strike', this.value)" /></td>
-      <td><input type="number" value="${t.premium || 0}" onchange="updateTrade('${t.id}', 'premium', this.value)" /></td>
-      <td><input type="number" value="${t.qty || 0}" onchange="updateTrade('${t.id}', 'qty', this.value)" /></td>
-      <td><input type="number" value="${t.size || 1000}" onchange="updateTrade('${t.id}', 'size', this.value)" /></td>
-      <td><button class="danger small" onclick="deleteTrade('${t.id}')">🗑</button></td>
-    `;
+    tr.innerHTML = `<td>${idx + 1}</td><td><select onchange="updateTrade('${t.id}', 'direction', this.value)"><option value="خرید" ${t.direction === 'خرید' ? 'selected' : ''}>خرید</option><option value="فروش" ${t.direction === 'فروش' ? 'selected' : ''}>فروش</option></select></td><td><select onchange="updateTrade('${t.id}', 'type', this.value)"><option value="call" ${t.type === 'call' ? 'selected' : ''}>call</option><option value="put" ${t.type === 'put' ? 'selected' : ''}>put</option></select></td><td><input value="${t.symbol || ''}" onchange="updateTrade('${t.id}', 'symbol', this.value)" list="symbolList2" /></td><td><input value="${t.option || ''}" onchange="onOptionChange('${t.id}', this.value)" list="optionList" /></td><td><input value="${t.expiry || ''}" onchange="updateTrade('${t.id}', 'expiry', this.value)" /></td><td><input type="number" value="${t.strike || 0}" onchange="updateTrade('${t.id}', 'strike', this.value)" /></td><td><input type="number" value="${t.premium || 0}" onchange="updateTrade('${t.id}', 'premium', this.value)" /></td><td><input type="number" value="${t.qty || 0}" onchange="updateTrade('${t.id}', 'qty', this.value)" /></td><td><input type="number" value="${t.size || 1000}" onchange="updateTrade('${t.id}', 'size', this.value)" /></td><td><button class="danger small" onclick="deleteTrade('${t.id}')">🗑</button></td>`;
     tbody.appendChild(tr);
   });
   if (tbody.children.length === 0) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#95a5a6;">موردی یافت نشد</td></tr>';
@@ -1275,7 +1261,7 @@ function deleteStrategyLeg(id) { state.strategyLegs = state.strategyLegs.filter(
 function clearStrategy() { if (!confirm('پای‌های استراتژی پاک شوند؟')) return; state.strategyLegs = []; saveToStorage(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary(); }
 function loadFromOpenPositions() {
   const filterSym = document.getElementById('loadSymbolFilter').value;
-  if (!confirm(`بارگذاری؟`)) return;
+  if (!confirm('بارگذاری؟')) return;
   state.strategyLegs = [];
   const symbols = new Set(), expiries = new Set();
   for (const lot of cachedOpenLots) {
@@ -1445,12 +1431,23 @@ function switchTab(name, ev) {
   if (name === 'sync') { ghUpdateStatus(); }
 }
 
+// ===== ساعت زنده =====
+function updateLiveClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = now.toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const clockEl = document.getElementById('liveClock');
+  const dateEl = document.getElementById('liveDate');
+  if (clockEl) clockEl.textContent = timeStr;
+  if (dateEl) dateEl.textContent = dateStr;
+}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
 // ===== Initialize =====
 loadFromStorage();
 render();
 renderStrategyMeta();
-
-// تنظیم اولیه فرم GitHub
 (function initGhForm() {
   if (ghConfig.username) document.getElementById('ghUsername').value = ghConfig.username;
   if (ghConfig.repo) document.getElementById('ghRepo').value = ghConfig.repo;
