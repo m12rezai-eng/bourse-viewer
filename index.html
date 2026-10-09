@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>داشبورد اختیار معامله</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Tahoma, sans-serif; background: #f5f7fa; margin: 0; padding: 20px; direction: rtl; }
+  h1 { color: #2c3e50; margin-bottom: 8px; }
+  h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-top: 30px; }
+  h3 { color: #34495e; margin-top: 25px; }
+  .tabs { display: flex; gap: 5px; margin: 20px 0; border-bottom: 2px solid #34495e; flex-wrap: wrap; }
+  .tab { padding: 10px 18px; background: #ecf0f1; border: none; cursor: pointer; font-family: inherit; font-size: 13px; border-radius: 8px 8px 0 0; }
+  .tab.active { background: #34495e; color: white; font-weight: bold; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .big-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+  .big-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center; }
+  .big-card .label { color: #7f8c8d; font-size: 13px; margin-bottom: 10px; }
+  .big-card .value { font-size: 22px; font-weight: bold; color: #2c3e50; font-family: Consolas, monospace; direction: ltr; }
+  .big-card.cash .value { color: #3498db; }
+  .big-card.commit .value { color: #e67e22; }
+  .big-card.deficit .value { color: #e74c3c; }
+  .big-card.surplus .value { color: #27ae60; }
+  .big-card.profit .value { color: #27ae60; }
+  .big-card.loss .value { color: #e74c3c; }
+  .big-card.be .value { color: #9b59b6; }
+  .big-card.archive .value { color: #95a5a6; }
+  .big-card.info .value { color: #16a085; }
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+  .dash-chart { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+  .dash-chart h3 { margin-top: 0; font-size: 15px; color: #34495e; text-align: center; }
+  .dash-chart .chart-inner { position: relative; height: 250px; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  th { background: #34495e; color: white; padding: 10px 6px; text-align: center; font-size: 12px; font-weight: normal; white-space: nowrap; }
+  td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #ecf0f1; font-size: 13px; }
+  tr:hover { background: #f8f9fa; }
+  tr.closed-row { background: #f0fff4; }
+  tr.archived-row { background: #f4f4f4; opacity: 0.65; }
+  tr.warn-row { background: #fef5e7; }
+  .num { font-family: Consolas, monospace; direction: ltr; text-align: center; }
+  .pos { color: #27ae60; font-weight: bold; }
+  .neg { color: #e74c3c; font-weight: bold; }
+  input, select { padding: 6px 8px; border: 1px solid #bdc3c7; border-radius: 5px; font-family: inherit; font-size: 13px; width: 100%; text-align: center; }
+  input:focus, select:focus { outline: none; border-color: #3498db; }
+  button { padding: 8px 16px; border: none; border-radius: 6px; background: #3498db; color: white; cursor: pointer; font-family: inherit; font-size: 13px; }
+  button:hover { background: #2980b9; }
+  button.danger { background: #e74c3c; } button.danger:hover { background: #c0392b; }
+  button.success { background: #27ae60; } button.success:hover { background: #1e8449; }
+  button.purple { background: #9b59b6; } button.purple:hover { background: #8e44ad; }
+  button.warning { background: #f39c12; } button.warning:hover { background: #d68910; }
+  button.gray { background: #7f8c8d; } button.gray:hover { background: #5d6d7e; }
+  button.small { padding: 4px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; align-items: center; }
+  .chart-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 20px 0; position: relative; }
+  .chart-wrap { position: relative; height: 420px; width: 100%; }
+  .footer { text-align: center; color: #95a5a6; font-size: 12px; margin-top: 30px; padding: 20px; }
+  .field-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; padding: 12px; background: white; border-radius: 8px; }
+  .field-row label { min-width: 220px; font-size: 14px; color: #34495e; }
+  .field-row input { max-width: 280px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; color: white; white-space: nowrap; }
+  .badge.buy { background: #27ae60; } .badge.sell { background: #e74c3c; }
+  .badge.call { background: #9b59b6; } .badge.put { background: #e67e22; }
+  .badge.long { background: #2980b9; } .badge.short { background: #8e44ad; }
+  .badge.be { background: #9b59b6; }
+  .badge.archived { background: #95a5a6; }
+  .badge.warn { background: #f39c12; }
+  .badge.offset { background: #16a085; }
+  .helper { font-size: 12px; color: #7f8c8d; margin: 8px 0; padding: 10px; background: #ecf0f1; border-radius: 6px; line-height: 1.8; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; flex-wrap: wrap; gap: 10px; }
+  .section-title { color: #2c3e50; font-size: 18px; font-weight: bold; margin: 25px 0 10px; padding: 10px; background: #ecf0f1; border-radius: 8px; }
+  .sort-bar { display: flex; gap: 12px; align-items: center; background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); flex-wrap: wrap; }
+  .sort-bar label { font-size: 12px; color: #34495e; font-weight: bold; }
+  .sort-bar select, .sort-bar input { width: auto; min-width: 130px; padding: 6px 10px; font-size: 12px; }
+  .sort-item { display: flex; flex-direction: column; gap: 4px; }
+  .meta-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: white; padding: 18px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .meta-bar .field { display: flex; flex-direction: column; gap: 5px; }
+  .meta-bar .field label { font-size: 12px; color: #7f8c8d; font-weight: bold; }
+  .meta-bar .field input, .meta-bar .field select { text-align: right; padding: 8px 10px; font-size: 14px; }
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+  .summary-cards .mini-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; border-right: 4px solid #3498db; }
+  .summary-cards .mini-card.paid { border-right-color: #e74c3c; }
+  .summary-cards .mini-card.received { border-right-color: #27ae60; }
+  .summary-cards .mini-card.margin { border-right-color: #e67e22; }
+  .summary-cards .mini-card.total { border-right-color: #9b59b6; }
+  .summary-cards .mini-card .mini-label { font-size: 12px; color: #7f8c8d; margin-bottom: 8px; }
+  .summary-cards .mini-card .mini-value { font-size: 18px; font-weight: bold; color: #2c3e50; font-family: Consolas, monospace; direction: ltr; }
+  .legend-chart { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; font-size: 12px; color: #555; }
+  .legend-chart .li { display: flex; align-items: center; gap: 6px; }
+  .legend-chart .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .legend-chart .dash { width: 20px; height: 0; border-top: 2px dashed #9b59b6; display: inline-block; }
+  .legend-chart .solid { width: 20px; height: 0; border-top: 3px solid #2c3e50; display: inline-block; }
+  .toggle-switch { position: relative; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #34495e; cursor: pointer; padding: 6px 10px; background: #ecf0f1; border-radius: 6px; }
+  .toggle-switch input { width: auto; margin: 0; }
+  .archive-filter { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin: 15px 0; }
+  .archive-filter .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .archive-filter .field { display: flex; flex-direction: column; gap: 5px; }
+  .archive-filter .field label { font-size: 12px; color: #7f8c8d; font-weight: bold; }
+  .archive-filter .field input, .archive-filter .field select { padding: 8px; font-size: 13px; }
+  .collapsible-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 12px 15px; background: #34495e; color: white; border-radius: 8px; margin: 20px 0 10px; font-size: 15px; font-weight: bold; user-select: none; }
+  .collapsible-header .arrow { transition: 0.2s; }
+  .collapsible-header.closed .arrow { transform: rotate(-90deg); }
+  .collapsible-body.hidden { display: none; }
+  #debugLog { font-family: Consolas, monospace; font-size: 11px; color: #c0392b; padding: 8px; background: #fdecea; border-radius: 6px; margin: 10px 0; display: none; direction: ltr; text-align: left; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 20px 0; }
+  .kpi-card { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); border-radius: 14px; padding: 14px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 10px; transition: 0.2s; border-right: 5px solid #3498db; min-width: 0; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+  .kpi-card .kpi-icon { font-size: 24px; flex-shrink: 0; }
+  .kpi-card .kpi-content { flex: 1; text-align: right; min-width: 0; overflow: hidden; }
+  .kpi-card .kpi-label { color: #7f8c8d; font-size: 11px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-card .kpi-value { font-size: 15px; font-weight: bold; font-family: Consolas, monospace; direction: ltr; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+  .kpi-card.cash { border-right-color: #3498db; } .kpi-card.cash .kpi-value { color: #3498db; }
+  .kpi-card.commit { border-right-color: #e67e22; } .kpi-card.commit .kpi-value { color: #e67e22; }
+  .kpi-card.profit { border-right-color: #27ae60; } .kpi-card.profit .kpi-value { color: #27ae60; }
+  .kpi-card.loss { border-right-color: #e74c3c; } .kpi-card.loss .kpi-value { color: #e74c3c; }
+  .kpi-card.info { border-right-color: #16a085; } .kpi-card.info .kpi-value { color: #16a085; }
+  .gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+  .gauge-center .gauge-label { font-size: 12px; color: #7f8c8d; }
+  .gauge-center .gauge-value { font-size: 22px; font-weight: bold; font-family: Consolas, monospace; direction: ltr; }
+  .alert-strip { padding: 12px 18px; border-radius: 10px; margin: 10px 0; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+  .alert-strip.danger { background: #fdecea; color: #c0392b; border-right: 5px solid #e74c3c; }
+  .alert-strip.warning { background: #fef5e7; color: #b9770e; border-right: 5px solid #f39c12; }
+  .alert-strip.success { background: #eafaf1; color: #1e8449; border-right: 5px solid #27ae60; }
+  .sync-status { padding: 12px 18px; border-radius: 8px; margin: 10px 0; font-weight: bold; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .sync-status.connected { background: #eafaf1; color: #1e8449; border-right: 5px solid #27ae60; }
+  .sync-status.disconnected { background: #fdecea; color: #c0392b; border-right: 5px solid #e74c3c; }
+  .sync-status.syncing { background: #eaf2f8; color: #1a5276; border-right: 5px solid #3498db; }
+</style>
+</head>
+<body>
+
+<h1>📊 داشبورد مدیریت اختیار معامله</h1>
+<p style="color:#7f8c8d;">آخرین به‌روزرسانی: <span id="lastUpdate"></span> | <span id="syncIndicator"></span></p>
+<div id="debugLog"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard', event)">📊 داشبورد</button>
+  <button class="tab" onclick="switchTab('input', event)">📝 ثبت معاملات</button>
+  <button class="tab" onclick="switchTab('diagnose', event)">🔬 تشخیص</button>
+  <button class="tab" onclick="switchTab('openPos', event)">📈 باز</button>
+  <button class="tab" onclick="switchTab('summary', event)">📋 خلاصه</button>
+  <button class="tab" onclick="switchTab('closedPos', event)">💹 بسته</button>
+  <button class="tab" onclick="switchTab('strategy', event)">📉 استراتژی</button>
+  <button class="tab" onclick="switchTab('sync', event)">☁️ GitHub</button>
+  <button class="tab" onclick="switchTab('settings', event)">⚙️ تنظیمات</button>
+</div>
+
+<!-- ==================== داشبورد ==================== -->
+<div id="dashboard" class="tab-content active">
+  <div id="dashAlerts"></div>
+  <div class="kpi-grid">
+    <div class="kpi-card cash"><div class="kpi-icon">💰</div><div class="kpi-content"><div class="kpi-label">موجودی نقد</div><div class="kpi-value" id="kpiCash">0</div></div></div>
+    <div class="kpi-card commit"><div class="kpi-icon">📌</div><div class="kpi-content"><div class="kpi-label">تعهد نقدی خالص</div><div class="kpi-value" id="kpiCommit">0</div></div></div>
+    <div class="kpi-card profit" id="kpiPnLCard"><div class="kpi-icon">💹</div><div class="kpi-content"><div class="kpi-label">سود/زیان تحقق‌یافته</div><div class="kpi-value" id="kpiPnL">0</div></div></div>
+    <div class="kpi-card info"><div class="kpi-icon">📊</div><div class="kpi-content"><div class="kpi-label">موقعیت‌های باز / کل</div><div class="kpi-value" id="kpiPositions">0 / 0</div></div></div>
+    <div class="kpi-card profit"><div class="kpi-icon">📥</div><div class="kpi-content"><div class="kpi-label">پریمیوم دریافتی</div><div class="kpi-value" id="kpiRecv">0</div></div></div>
+    <div class="kpi-card loss"><div class="kpi-icon">📤</div><div class="kpi-content"><div class="kpi-label">پریمیوم پرداختی</div><div class="kpi-value" id="kpiPaid">0</div></div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="dash-chart">
+      <h3>💵 نسبت موجودی به تعهد</h3>
+      <div class="chart-inner"><canvas id="gaugeChart"></canvas><div class="gauge-center"><div class="gauge-label">پوشش</div><div class="gauge-value" id="gaugePercent">-</div></div></div>
+    </div>
+    <div class="dash-chart"><h3>📅 تعهد به تفکیک سررسید</h3><div class="chart-inner"><canvas id="expiryDonut"></canvas></div></div>
+    <div class="dash-chart"><h3>🏷 ترکیب به تفکیک نماد</h3><div class="chart-inner"><canvas id="symbolDonut"></canvas></div></div>
+    <div class="dash-chart"><h3>🎯 ترکیب به تفکیک نوع</h3><div class="chart-inner"><canvas id="typeDonut"></canvas></div></div>
+  </div>
+  <div class="section-title">📅 جدول تعهد نقدی به تفکیک سررسید</div>
+  <div class="helper"><b>توجه:</b> برای فروش پوت، ۱۰٪ وجه تضمین بلوکه شده از مبلغ اعمال کم می‌شود.</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>سررسید</th>
+        <th>مبلغ اعمال خرید کال</th>
+        <th>مبلغ اعمال فروش پوت</th>
+        <th>وجه تضمین فروش پوت (10%)</th>
+        <th>وجه تضمین فروش کال</th>
+        <th>جمع تعهد نقدی</th>
+        <th>سهم پایه لازم</th>
+      </tr></thead>
+      <tbody id="expirySummaryBody"></tbody>
+      <tfoot id="expirySummaryFoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== ثبت معاملات ==================== -->
+<div id="input" class="tab-content">
+  <div class="toolbar">
+    <h2 style="margin:0;">📝 ثبت معاملات</h2>
+    <div class="btn-row" style="margin:0;">
+      <button class="success" onclick="addTrade()">➕ افزودن</button>
+      <button onclick="pasteFromExcel()">📋 پیست از اکسل</button>
+    </div>
+  </div>
+  <div class="helper">💡 ترتیب = ترتیب زمانی. FIFO خودکار عمل می‌کند.</div>
+  <div class="sort-bar">
+    <div class="sort-item"><label>جستجو</label><input type="text" id="inpFilterText" placeholder="کد اختیار..." oninput="renderInput()" /></div>
+    <div class="sort-item"><label>نماد</label><select id="inpFilterSymbol" onchange="renderInput()"><option value="">همه</option></select></div>
+    <div class="sort-item"><label>نوع</label><select id="inpFilterType" onchange="renderInput()"><option value="">همه</option><option value="call">call</option><option value="put">put</option></select></div>
+    <div class="sort-item"><label>موقعیت</label><select id="inpFilterDirection" onchange="renderInput()"><option value="">همه</option><option value="خرید">خرید</option><option value="فروش">فروش</option></select></div>
+    <div class="sort-item"><label>سررسید</label><select id="inpFilterExpiry" onchange="renderInput()"><option value="">همه</option></select></div>
+    <button class="small gray" onclick="resetInputFilters()">🔄</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>#</th><th>موقعیت</th><th>نوع</th><th>نماد</th><th>کد اختیار</th>
+        <th>سررسید</th><th>قیمت اعمال</th><th>پریمیوم</th><th>تعداد</th><th>اندازه</th><th>🗑</th>
+      </tr></thead>
+      <tbody id="inputBody"></tbody>
+    </table>
+  </div>
+  <datalist id="optionList"></datalist>
+  <datalist id="symbolList2"></datalist>
+  <div class="btn-row" style="justify-content: center;">
+    <button class="success" onclick="addTrade()" style="font-size: 15px; padding: 12px 30px;">➕ افزودن معامله جدید</button>
+  </div>
+  <div class="btn-row" style="justify-content: center;">
+    <button class="success" onclick="saveData()">💾 ذخیره</button>
+    <button class="danger" onclick="clearAll()">🗑 پاک کردن همه</button>
+  </div>
+</div>
+
+<!-- ==================== تشخیص ==================== -->
+<div id="diagnose" class="tab-content">
+  <h2>🔬 تشخیص تطابق FIFO</h2>
+  <div id="diagnoseOutput"></div>
+</div>
+
+<!-- ==================== موقعیت‌های باز ==================== -->
+<div id="openPos" class="tab-content">
+  <h2>📈 موقعیت‌های باز</h2>
+  <div class="sort-bar">
+    <div class="sort-item"><label>نماد</label><select id="opFilterSymbol" onchange="renderOpenPositions()"><option value="">همه</option></select></div>
+    <div class="sort-item"><label>نوع</label><select id="opFilterType" onchange="renderOpenPositions()"><option value="">همه</option><option value="call">کال</option><option value="put">پوت</option></select></div>
+    <div class="sort-item"><label>وضعیت</label><select id="opFilterDirection" onchange="renderOpenPositions()"><option value="">همه</option><option value="خرید">Long</option><option value="فروش">Short</option></select></div>
+    <div class="sort-item"><label>سررسید</label><select id="opFilterExpiry" onchange="renderOpenPositions()"><option value="">همه</option></select></div>
+    <button class="small gray" onclick="resetOpenPosFilters()">🔄</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>کد موقعیت</th><th>نماد</th><th>نوع</th><th>سررسید</th><th>قیمت اعمال</th>
+        <th>پریمیوم</th><th>سر به سر</th><th>وضعیت</th><th>تعداد باز</th>
+        <th>پریمیوم کل</th><th>تعهد نقدی</th><th>سهم پایه</th>
+      </tr></thead>
+      <tbody id="openPosBody"></tbody>
+      <tfoot id="openPosFoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== خلاصه ==================== -->
+<div id="summary" class="tab-content">
+  <h2>📋 خلاصه به تفکیک نماد و سررسید</h2>
+  <div class="sort-bar">
+    <div class="sort-item"><label>مرتب‌سازی:</label>
+      <select id="sortField" onchange="renderSummary()">
+        <option value="symbol">نماد</option><option value="expiry">سررسید</option>
+        <option value="type">نوع</option><option value="direction">جهت</option>
+        <option value="commitTotal">جمع تعهد</option>
+      </select>
+    </div>
+    <div class="sort-item"><label>ترتیب:</label>
+      <select id="sortOrder" onchange="renderSummary()"><option value="asc">صعودی ↑</option><option value="desc">نزولی ↓</option></select>
+    </div>
+    <div class="sort-item"><label>نماد:</label><select id="filterSymbol" onchange="renderSummary()"><option value="">همه</option></select></div>
+    <div class="sort-item"><label>سررسید:</label><select id="filterExpiry" onchange="renderSummary()"><option value="">همه</option></select></div>
+    <div class="sort-item"><label>نوع:</label><select id="filterType" onchange="renderSummary()"><option value="">همه</option><option value="call">کال</option><option value="put">پوت</option></select></div>
+    <button class="small gray" onclick="resetFilters()">🔄</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>نماد</th><th>سررسید</th><th>نوع</th><th>موقعیت</th><th>تعداد باز</th>
+        <th>پریمیوم پرداختی</th><th>پریمیوم دریافتی</th><th>وجه التضمین</th>
+        <th>مبلغ اعمال</th><th>سهم پایه</th><th>وضعیت</th>
+      </tr></thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== موقعیت‌های بسته ==================== -->
+<div id="closedPos" class="tab-content">
+  <h2>💹 موقعیت‌های بسته</h2>
+  <div class="toolbar">
+    <div class="btn-row" style="margin:0;">
+      <label class="toggle-switch"><input type="checkbox" id="showArchived" onchange="renderClosedPositions(cachedClosedLots)" />👁 نمایش آرشیو</label>
+      <label class="toggle-switch"><input type="checkbox" id="onlyActiveSymbols" onchange="renderClosedPositions(cachedClosedLots)" checked />📊 فقط نمادهای فعال</label>
+    </div>
+    <div class="btn-row" style="margin:0;">
+      <button class="warning small" onclick="archiveAllClosed()">📦 آرشیو همه</button>
+      <button class="gray small" onclick="unarchiveAll()">♻ بازگرداندن همه</button>
+    </div>
+  </div>
+  <div class="big-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+    <div class="big-card profit"><div class="label">سود (فعال)</div><div class="value" id="totalProfit">0</div></div>
+    <div class="big-card loss"><div class="label">زیان (فعال)</div><div class="value" id="totalLoss">0</div></div>
+    <div class="big-card" id="netPnLCard"><div class="label">سود/زیان خالص</div><div class="value" id="netPnL">0</div></div>
+    <div class="big-card archive"><div class="label">آرشیو</div><div class="value" id="archivedPnL">0</div></div>
+    <div class="big-card" id="grandTotalPnLCard"><div class="label">کل</div><div class="value" id="grandTotalPnL">0</div></div>
+  </div>
+  <div class="collapsible-header" onclick="toggleCollapsible('archiveSection', this)"><span>🔍 فیلتر آرشیو</span><span class="arrow">▼</span></div>
+  <div class="collapsible-body" id="archiveSection">
+    <div class="archive-filter">
+      <div class="grid">
+        <div class="field"><label>نماد</label><select id="archFilterSymbol"><option value="">همه</option></select></div>
+        <div class="field"><label>کد اختیار</label><select id="archFilterOption"><option value="">همه</option></select></div>
+        <div class="field"><label>سررسید</label><select id="archFilterExpiry"><option value="">همه</option></select></div>
+        <div class="field"><label>از تاریخ</label><input type="date" id="archFilterDateFrom" /></div>
+        <div class="field"><label>تا تاریخ</label><input type="date" id="archFilterDateTo" /></div>
+      </div>
+      <div class="btn-row">
+        <button class="success small" onclick="restoreFilteredArchives()">♻ بازگرداندن</button>
+        <button class="warning small" onclick="archiveFilteredClosed()">📦 آرشیو</button>
+        <button class="gray small" onclick="resetArchiveFilters()">🔄</button>
+        <span id="archFilterCount" style="margin-right:auto; font-size:13px; color:#7f8c8d;"></span>
+      </div>
+    </div>
+  </div>
+  <h3>📋 ردیف‌های بسته</h3>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>وضعیت</th><th>کد موقعیت</th><th>نماد</th><th>نوع</th><th>نوع بسته</th>
+        <th>تعداد</th><th>قیمت ورود</th><th>قیمت خروج</th><th>سود/زیان</th>
+        <th>تاریخ آرشیو</th><th>عملیات</th>
+      </tr></thead>
+      <tbody id="closedPosBody"></tbody>
+    </table>
+  </div>
+  <h3>📊 سود/زیان به تفکیک نماد</h3>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>نماد</th><th>کد اختیار</th><th>نوع</th><th>تعداد بسته</th><th>سود/زیان</th></tr></thead>
+      <tbody id="pnlBySymbolBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== استراتژی ==================== -->
+<div id="strategy" class="tab-content">
+  <div class="toolbar">
+    <h2 style="margin:0;">📉 نمودار استراتژی</h2>
+    <div class="btn-row" style="margin:0; align-items:center;">
+      <label style="font-size:12px;">نماد:</label>
+      <select id="loadSymbolFilter" style="min-width:130px; padding:6px 10px;"><option value="">همه</option></select>
+      <button class="purple" onclick="loadFromOpenPositions()">📥 بارگذاری</button>
+      <button class="success" onclick="addStrategyLeg()">➕ پای جدید</button>
+      <button class="danger" onclick="clearStrategy()">🗑</button>
+    </div>
+  </div>
+  <div class="meta-bar">
+    <div class="field"><label>نماد اصلی</label><input id="metaSymbol" list="symbolList" onchange="updateStrategyMeta()" /><datalist id="symbolList"></datalist></div>
+    <div class="field"><label>سررسید</label><input id="metaExpiry" onchange="updateStrategyMeta()" /></div>
+    <div class="field"><label>قیمت پایانی</label><input id="metaCurrentPrice" type="number" onchange="updateStrategyMeta()" /></div>
+    <div class="field"><label>سود/زیان فعلی</label><input id="metaCurrentPnL" readonly style="font-weight:bold;color:#9b59b6;background:#f8f9fa;" value="-" /></div>
+  </div>
+  <div class="section-title">📋 پای‌های استراتژی</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>#</th><th>نوع</th><th>جهت</th><th>قیمت اعمال</th><th>پریمیوم</th><th>تعداد</th><th>اندازه</th><th>برچسب</th><th>🗑</th></tr></thead>
+      <tbody id="strategyBody"></tbody>
+    </table>
+  </div>
+  <div class="section-title">📊 منحنی سود/زیان</div>
+  <div class="legend-chart">
+    <span class="li"><span class="dot" style="background:#27ae60;"></span> سود</span>
+    <span class="li"><span class="dot" style="background:#e74c3c;"></span> زیان</span>
+    <span class="li"><span class="solid"></span> صفر</span>
+    <span class="li"><span class="dash"></span> سر به سر</span>
+    <span class="li"><span class="dot" style="background:#e67e22;"></span> قیمت فعلی</span>
+  </div>
+  <div class="chart-container"><div class="chart-wrap"><canvas id="strategyChart"></canvas></div></div>
+  <div class="section-title">💰 خلاصه مالی</div>
+  <div class="summary-cards">
+    <div class="mini-card paid"><div class="mini-label">پریمیوم پرداختی</div><div class="mini-value neg" id="sumPremiumPaid">0</div></div>
+    <div class="mini-card received"><div class="mini-label">پریمیوم دریافتی</div><div class="mini-value pos" id="sumPremiumReceived">0</div></div>
+    <div class="mini-card margin"><div class="mini-label">وجه تضمین</div><div class="mini-value" id="sumMargin">0</div></div>
+    <div class="mini-card"><div class="mini-label">تعهد خرید کال</div><div class="mini-value" id="sumLongCallEx">0</div></div>
+    <div class="mini-card"><div class="mini-label">تعهد فروش پوت</div><div class="mini-value" id="sumShortPutEx">0</div></div>
+    <div class="mini-card total"><div class="mini-label">جمع تعهد</div><div class="mini-value" id="sumTotalCommit">0</div></div>
+  </div>
+  <div class="big-cards" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top:20px;">
+    <div class="big-card be"><div class="label">سر به سر پایین</div><div class="value" id="lowerBE">-</div></div>
+    <div class="big-card be"><div class="label">سر به سر بالا</div><div class="value" id="upperBE">-</div></div>
+    <div class="big-card profit"><div class="label">حداکثر سود</div><div class="value" id="maxProfit">-</div></div>
+    <div class="big-card loss"><div class="label">حداکثر زیان</div><div class="value" id="maxLoss">-</div></div>
+  </div>
+</div>
+
+<!-- ==================== GitHub Sync ==================== -->
+<div id="sync" class="tab-content">
+  <h2>☁️ سینک با GitHub</h2>
+  <div class="helper">
+    برای اینکه داشبوردت بین همه دستگاه‌ها (گوشی، لپ‌تاپ، ...) همگام بشه، این تنظیمات رو انجام بده. <br>
+    <b>توکن GitHub رو فقط یه بار اینجا وارد کن. به صورت امن تو مرورگر همون دستگاه ذخیره می‌شه.</b>
+  </div>
+
+  <div id="syncStatusBox"></div>
+
+  <h3>⚙️ تنظیمات</h3>
+  <div class="field-row">
+    <label>یوزرنیم GitHub:</label>
+    <input type="text" id="ghUsername" value="m12rezai-eng" placeholder="m12rezai-eng" />
+  </div>
+  <div class="field-row">
+    <label>اسم Repository:</label>
+    <input type="text" id="ghRepo" value="bourse-dashboard" placeholder="bourse-dashboard" />
+  </div>
+  <div class="field-row">
+    <label>توکن GitHub:</label>
+    <input type="password" id="ghToken" placeholder="ghp_..." style="max-width:400px;" />
+  </div>
+  <div class="btn-row">
+    <button class="success" onclick="ghConnect()">🔗 اتصال</button>
+    <button class="gray" onclick="ghDisconnect()">🔌 قطع اتصال</button>
+  </div>
+
+  <h3>🔄 عملیات دستی</h3>
+  <div class="btn-row">
+    <button class="purple" onclick="ghSave()">📤 آپلود به GitHub</button>
+    <button class="purple" onclick="ghLoad()">📥 دانلود از GitHub</button>
+  </div>
+
+  <h3>⚡ سینک خودکار</h3>
+  <div class="field-row">
+    <label class="toggle-switch"><input type="checkbox" id="ghAutoSync" onchange="ghToggleAutoSync()" /> فعال باشد (هر ۳۰ ثانیه چک می‌کند)</label>
+  </div>
+
+  <h3>📋 گزارش آخرین عملیات</h3>
+  <div id="ghLog" class="helper" style="direction: ltr; text-align: left; font-family: Consolas, monospace; max-height: 250px; overflow-y: auto;"></div>
+
+  <div class="helper" style="margin-top: 20px; background: #fef5e7;">
+    <b>راهنمای استفاده:</b><br>
+    ۱. توکن رو پیست کن و «اتصال» رو بزن<br>
+    ۲. اگه موفق بود، تیک «سینک خودکار» رو بزن<br>
+    ۳. از این به بعد هر تغییری تو هر دستگاهی بدی، خودکار به GitHub می‌ره و از اونجا به دستگاه‌های دیگه میاد<br>
+    ۴. دکمه «دانلود از GitHub» رو بزن اگه می‌خوای آخرین داده‌ها رو از سرور بگیری
+  </div>
+</div>
+
+<!-- ==================== تنظیمات ==================== -->
+<div id="settings" class="tab-content">
+  <h2>⚙️ تنظیمات</h2>
+  <div class="field-row"><label>موجودی نقدی (ریال):</label><input type="number" id="cashInput" onchange="updateCash()" /></div>
+  <div class="field-row"><label>درصد وجه التضمین فروش کال (%):</label><input type="number" id="marginInput" onchange="updateMargin()" /></div>
+  <div class="btn-row">
+    <button class="success" onclick="exportData()">📥 خروجی JSON</button>
+    <button onclick="document.getElementById('importFile').click()">📤 ورود از JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)" />
+  </div>
+  <h2 style="color:#e74c3c;">⚠️ ناحیه خطر</h2>
+  <div class="btn-row">
+    <button class="danger" onclick="fullReset()">🗑 پاک کردن کل حافظه</button>
+  </div>
+</div>
+
+<div class="footer">ساخته‌شده با ❤️</div>
+
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  const el = document.getElementById('debugLog');
+  if (el) { el.style.display = 'block'; el.textContent += `[Error] ${msg} at line ${line}\n`; }
+  console.error('Global error:', msg, err);
+};
+const STORAGE_KEY = 'optionDashboard_v14';
+const GH_CONFIG_KEY = 'optionDashboard_ghConfig';
+let state = { trades: [], strategyLegs: [], archivedItems: [], strategyMeta: { symbol: '', expiry: '', currentPrice: 0 }, settings: { cash: 9760000000, marginPercent: 20 } };
+let cachedOpenLots = [], cachedClosedLots = [], currentBreakevens = [], charts = {};
+
+// ===== GitHub Sync State =====
+let ghConfig = { username: '', repo: '', token: '', connected: false, autoSync: false };
+let ghLastSha = null;
+let ghAutoSyncTimer = null;
+let ghSaveTimer = null;
+
+function loadGhConfig() {
+  const raw = localStorage.getItem(GH_CONFIG_KEY);
+  if (raw) {
+    try { ghConfig = JSON.parse(raw); } catch(e) {}
+  }
+}
+function saveGhConfig() {
+  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(ghConfig));
+}
+function ghLog(msg, isError) {
+  const el = document.getElementById('ghLog');
+  if (!el) return;
+  const time = new Date().toLocaleTimeString('fa-IR');
+  const color = isError ? '#e74c3c' : '#27ae60';
+  el.innerHTML = `<div style="color:${color}; margin: 4px 0;">[${time}] ${msg}</div>` + el.innerHTML;
+}
+function ghUpdateStatus() {
+  const box = document.getElementById('syncStatusBox');
+  const ind = document.getElementById('syncIndicator');
+  if (!box) return;
+  if (ghConfig.connected) {
+    box.innerHTML = `<div class="sync-status connected">✅ متصل به github.com/${ghConfig.username}/${ghConfig.repo}</div>`;
+    if (ind) ind.innerHTML = '<span style="color:#27ae60;">☁️ متصل</span>';
+  } else {
+    box.innerHTML = `<div class="sync-status disconnected">❌ قطع - برای فعال‌سازی سینک، توکن رو وارد کن</div>`;
+    if (ind) ind.innerHTML = '';
+  }
+}
+
+function ghApi(method, path, body) {
+  const url = `https://api.github.com/repos/${ghConfig.username}/${ghConfig.repo}/contents/${path}`;
+  const headers = {
+    'Authorization': `token ${ghConfig.token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(url, opts).then(async res => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data.message || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  });
+}
+
+async function ghConnect() {
+  const u = document.getElementById('ghUsername').value.trim();
+  const r = document.getElementById('ghRepo').value.trim();
+  const t = document.getElementById('ghToken').value.trim();
+  if (!u || !r || !t) { alert('همه فیلدها رو پر کن'); return; }
+  ghConfig.username = u;
+  ghConfig.repo = r;
+  ghConfig.token = t;
+  ghLog('در حال تست اتصال...');
+  try {
+    await ghApi('GET', 'README.md');
+    ghConfig.connected = true;
+    saveGhConfig();
+    ghUpdateStatus();
+    ghLog('✅ اتصال موفق!');
+    await ghLoad();
+  } catch(e) {
+    ghConfig.connected = false;
+    saveGhConfig();
+    ghUpdateStatus();
+    ghLog('❌ خطا در اتصال: ' + e.message, true);
+    alert('اتصال ناموفق: ' + e.message);
+  }
+}
+
+function ghDisconnect() {
+  ghConfig.connected = false;
+  saveGhConfig();
+  ghUpdateStatus();
+  ghLog('🔌 اتصال قطع شد');
+}
+
+async function ghSave() {
+  if (!ghConfig.connected) { alert('اول وصل شو'); return; }
+  ghLog('📤 در حال آپلود...');
+  try {
+    // پیدا کردن SHA فعلی
+    let sha = null;
+    try {
+      const existing = await ghApi('GET', 'data.json');
+      sha = existing.sha;
+    } catch(e) { /* فایل وجود نداره، اشکالی نداره */ }
+
+    const content = JSON.stringify(state, null, 2);
+    const b64 = btoa(unescape(encodeURIComponent(content)));
+    const body = {
+      message: `sync: ${new Date().toISOString()}`,
+      content: b64,
+      sha: sha || undefined
+    };
+    const result = await ghApi('PUT', 'data.json', body);
+    ghLastSha = result.content.sha;
+    ghLog('✅ آپلود موفق - ' + new Date().toLocaleTimeString('fa-IR'));
+  } catch(e) {
+    ghLog('❌ خطای آپلود: ' + e.message, true);
+  }
+}
+
+async function ghLoad() {
+  if (!ghConfig.connected) { alert('اول وصل شو'); return; }
+  ghLog('📥 در حال دانلود...');
+  try {
+    const data = await ghApi('GET', 'data.json');
+    ghLastSha = data.sha;
+    const content = decodeURIComponent(escape(atob(data.content)));
+    const parsed = JSON.parse(content);
+    state.trades = parsed.trades || [];
+    state.strategyLegs = parsed.strategyLegs || [];
+    state.strategyMeta = parsed.strategyMeta || { symbol: '', expiry: '', currentPrice: 0 };
+    state.settings = parsed.settings || { cash: 0, marginPercent: 20 };
+    state.archivedItems = parsed.archivedItems || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    render();
+    renderStrategyMeta();
+    ghLog('✅ دانلود موفق - ' + new Date().toLocaleTimeString('fa-IR'));
+  } catch(e) {
+    if (e.message.includes('Not Found')) {
+      ghLog('📭 هنوز داده‌ای روی GitHub نیست - اولین آپلود رو انجام بده');
+    } else {
+      ghLog('❌ خطای دانلود: ' + e.message, true);
+    }
+  }
+}
+
+function ghToggleAutoSync() {
+  const cb = document.getElementById('ghAutoSync');
+  ghConfig.autoSync = cb.checked;
+  saveGhConfig();
+  if (ghConfig.autoSync) {
+    ghLog('⚡ سینک خودکار فعال شد');
+    if (ghAutoSyncTimer) clearInterval(ghAutoSyncTimer);
+    ghAutoSyncTimer = setInterval(async () => {
+      if (!ghConfig.connected) return;
+      try {
+        const data = await ghApi('GET', 'data.json');
+        if (data.sha !== ghLastSha) {
+          ghLog('🔄 تغییر جدید روی سرور پیدا شد - در حال دانلود...');
+          ghLastSha = data.sha;
+          const content = decodeURIComponent(escape(atob(data.content)));
+          const parsed = JSON.parse(content);
+          state.trades = parsed.trades || [];
+          state.strategyLegs = parsed.strategyLegs || [];
+          state.strategyMeta = parsed.strategyMeta || { symbol: '', expiry: '', currentPrice: 0 };
+          state.settings = parsed.settings || { cash: 0, marginPercent: 20 };
+          state.archivedItems = parsed.archivedItems || [];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          render();
+          renderStrategyMeta();
+          ghLog('✅ تغییرات از سرور اعمال شد');
+        }
+      } catch(e) { /* ignore */ }
+    }, 30000);
+  } else {
+    ghLog('⚡ سینک خودکار غیرفعال شد');
+    if (ghAutoSyncTimer) { clearInterval(ghAutoSyncTimer); ghAutoSyncTimer = null; }
+  }
+}
+
+function ghAutoSave() {
+  if (!ghConfig.connected) return;
+  if (ghSaveTimer) clearTimeout(ghSaveTimer);
+  ghSaveTimer = setTimeout(() => { ghSave(); }, 3000);
+}
+
+// ============ State Functions ============
+function genId() { return 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+function makeClosedKey(c) { return `${c.entryOrder}_${c.exitOrder}_${c.code}_${c.type}_${c.entryPrice}_${c.exitPrice}_${c.qty}`; }
+function isArchived(k) { return state.archivedItems.some(x => x.key === k); }
+function getArchiveInfo(k) { return state.archivedItems.find(x => x.key === k); }
+
+function normalizeOption(opt) {
+  if (!opt) return '';
+  let s = String(opt);
+  s = s.replace(/[\s\u200b\u200c\u200d\u200e\u200f\u2028\u2029\u202a-\u202e\u202f\u205f\u3000\ufeff]+/g, ' ');
+  s = s.trim();
+  s = s.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/ﻯ/g, 'ی').replace(/ﻰ/g, 'ی');
+  s = s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+  s = s.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString());
+  s = s.replace(/أ|إ|آ/g, 'ا').replace(/ة/g, 'ه').replace(/ۀ/g, 'ه');
+  return s;
+}
+function normalizeDirection(d) {
+  if (!d) return '';
+  const s = String(d).trim();
+  if (s.includes('خرید') || s.includes('خريد') || s.toLowerCase().includes('buy')) return 'خرید';
+  if (s.includes('فروش') || s.toLowerCase().includes('sell')) return 'فروش';
+  return s;
+}
+function makeKey(t) { return normalizeOption(t.option) + '||' + (t.type || '').trim().toLowerCase(); }
+
+function loadFromStorage() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      state = JSON.parse(raw);
+      if (!state.trades) state.trades = [];
+      if (!state.strategyLegs) state.strategyLegs = [];
+      if (!state.strategyMeta) state.strategyMeta = { symbol: '', expiry: '', currentPrice: 0 };
+      if (!state.settings) state.settings = { cash: 0, marginPercent: 20 };
+      if (!state.archivedItems) state.archivedItems = [];
+    } catch(e) {}
+  } else {
+    state.trades = [
+      { id: genId(), direction: 'خرید', type: 'call', symbol: 'وبملت', option: 'ضملت 7039', expiry: '1405/07/22', strike: 954, premium: 657, qty: 1410, size: 1000 },
+      { id: genId(), direction: 'فروش', type: 'call', symbol: 'وبملت', option: 'ضملت 7038', expiry: '1405/07/22', strike: 854, premium: 648, qty: 34, size: 1000 },
+      { id: genId(), direction: 'خرید', type: 'call', symbol: 'وبملت', option: 'ضملت 7044', expiry: '1405/07/22', strike: 1454, premium: 62, qty: 1000, size: 1000 },
+      { id: genId(), direction: 'فروش', type: 'call', symbol: 'وبملت', option: 'ضملت 7044', expiry: '1405/07/22', strike: 1454, premium: 115, qty: 900, size: 1000 },
+      { id: genId(), direction: 'فروش', type: 'put', symbol: 'فزر', option: 'طفزر 718', expiry: '1405/07/26', strike: 240000, premium: 6439, qty: 15, size: 1000 },
+      { id: genId(), direction: 'خرید', type: 'call', symbol: 'اهرم', option: 'ضهرم 7050', expiry: '1405/07/29', strike: 20000, premium: 30526, qty: 12, size: 1000 },
+      { id: genId(), direction: 'فروش', type: 'call', symbol: 'اهرم', option: 'ضهرم 7050', expiry: '1405/07/29', strike: 20000, premium: 53500, qty: 1, size: 1000 },
+      { id: genId(), direction: 'فروش', type: 'put', symbol: 'اهرم', option: 'طهرم 8029', expiry: '1405/08/27', strike: 50000, premium: 1098, qty: 30, size: 1000 }
+    ];
+  }
+  saveToStorage();
+  loadGhConfig();
+}
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  ghAutoSave();
+}
+function saveData() { saveToStorage(); render(); alert('✅ ذخیره شد'); }
+function updateCash() { state.settings.cash = Number(document.getElementById('cashInput').value) || 0; saveToStorage(); render(); }
+function updateMargin() { state.settings.marginPercent = Number(document.getElementById('marginInput').value) || 0; saveToStorage(); render(); }
+function fullReset() { if (!confirm('⚠️ کل حافظه پاک شود؟')) return; localStorage.removeItem(STORAGE_KEY); location.reload(); }
+
+function computePositions(trades) {
+  const groups = {};
+  trades.forEach((t, idx) => {
+    const key = makeKey(t);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ ...t, _order: idx });
+  });
+  const openLots = [], closedLots = [];
+  for (const key in groups) {
+    const lots = [];
+    for (const t of groups[key]) {
+      const qty = (Number(t.qty) || 0) * (Number(t.size) || 0);
+      const price = Number(t.premium) || 0;
+      const dir = normalizeDirection(t.direction);
+      let remaining = qty;
+      if (dir === 'خرید') {
+        for (let i = 0; i < lots.length && remaining > 0; i++) {
+          const lot = lots[i];
+          if (lot.direction !== 'فروش' || lot.remaining <= 0) continue;
+          const match = Math.min(lot.remaining, remaining);
+          closedLots.push({ code: t.option, symbol: t.symbol, type: t.type, direction: 'Short', entryPrice: lot.price, exitPrice: price, qty: match / (t.size || 1), size: t.size, pnl: (lot.price - price) * match, entryOrder: lot._order, exitOrder: t._order });
+          lot.remaining -= match; remaining -= match;
+        }
+        if (remaining > 0) lots.push({ direction: 'خرید', price, remaining, size: t.size, symbol: t.symbol, option: t.option, type: t.type, expiry: t.expiry, strike: t.strike, _order: t._order });
+      } else {
+        for (let i = 0; i < lots.length && remaining > 0; i++) {
+          const lot = lots[i];
+          if (lot.direction !== 'خرید' || lot.remaining <= 0) continue;
+          const match = Math.min(lot.remaining, remaining);
+          closedLots.push({ code: t.option, symbol: t.symbol, type: t.type, direction: 'Long', entryPrice: lot.price, exitPrice: price, qty: match / (t.size || 1), size: t.size, pnl: (price - lot.price) * match, entryOrder: lot._order, exitOrder: t._order });
+          lot.remaining -= match; remaining -= match;
+        }
+        if (remaining > 0) lots.push({ direction: 'فروش', price, remaining, size: t.size, symbol: t.symbol, option: t.option, type: t.type, expiry: t.expiry, strike: t.strike, _order: t._order });
+      }
+    }
+    for (const lot of lots) if (lot.remaining > 0) openLots.push(lot);
+  }
+  return { openLots, closedLots };
+}
+
+function calcMargin(lot) { if (lot.direction === 'فروش' && lot.type === 'call') return (state.settings.marginPercent / 100) * (lot.strike || 0) * lot.remaining; return 0; }
+function calcExercise(lot) { if ((lot.direction === 'خرید' && lot.type === 'call') || (lot.direction === 'فروش' && lot.type === 'put')) return (lot.strike || 0) * lot.remaining; return 0; }
+function calcBaseShares(lot) { if (lot.direction === 'خرید' && lot.type === 'put') return lot.remaining; return 0; }
+function calcPremium(lot) { return lot.remaining * lot.price; }
+function calcShortPutMargin(lot) { if (lot.direction === 'فروش' && lot.type === 'put') return (lot.strike || 0) * lot.remaining * 0.10; return 0; }
+function calcCommitment(lot) {
+  if (lot.direction === 'خرید' && lot.type === 'call') return calcExercise(lot);
+  if (lot.direction === 'فروش' && lot.type === 'call') return calcMargin(lot);
+  if (lot.direction === 'فروش' && lot.type === 'put')  return calcExercise(lot) - calcShortPutMargin(lot);
+  return 0;
+}
+function calcBreakeven(lot) { const K = Number(lot.strike) || 0; const P = Number(lot.price) || 0; if (lot.type === 'call') return K + P; if (lot.type === 'put') return K - P; return 0; }
+function formatNum(n) { if (!isFinite(n)) return '0'; return Math.round(n).toLocaleString('en-US'); }
+function formatDate(ts) { if (!ts) return '-'; try { return new Date(ts).toLocaleDateString('fa-IR'); } catch(e) { return '-'; } }
+
+function render() {
+  try {
+    const { openLots, closedLots } = computePositions(state.trades);
+    cachedOpenLots = openLots; cachedClosedLots = closedLots;
+    renderDashboard(openLots, closedLots);
+    renderInput();
+    renderFilterOptions(openLots);
+    renderSummary();
+    renderOpenPositions();
+    renderArchiveFilters();
+    renderClosedPositions(closedLots);
+    renderDiagnose();
+    renderStrategyLegs();
+    renderStrategyChart();
+    renderStrategySummary();
+    renderSettings();
+    ghUpdateStatus();
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('fa-IR');
+  } catch(e) { console.error('Render error:', e); const el = document.getElementById('debugLog'); if (el) { el.style.display = 'block'; el.textContent += `[Render] ${e.message}\n`; } }
+}
+
+function renderDashboard(openLots, closedLots) {
+  const cash = Number(state.settings.cash) || 0;
+  let totalCommitment = 0, totalRecv = 0, totalPaid = 0;
+  for (const lot of openLots) {
+    totalCommitment += calcCommitment(lot);
+    const p = calcPremium(lot);
+    if (lot.direction === 'خرید') totalPaid += p; else totalRecv += p;
+  }
+  let totalPnL = 0;
+  for (const c of closedLots) totalPnL += c.pnl;
+  document.getElementById('kpiCash').textContent = formatNum(cash);
+  document.getElementById('kpiCommit').textContent = formatNum(totalCommitment);
+  document.getElementById('kpiPnL').textContent = formatNum(totalPnL);
+  document.getElementById('kpiPositions').textContent = `${openLots.length} / ${state.trades.length}`;
+  document.getElementById('kpiRecv').textContent = formatNum(totalRecv);
+  document.getElementById('kpiPaid').textContent = formatNum(totalPaid);
+  document.getElementById('kpiPnLCard').className = 'kpi-card ' + (totalPnL >= 0 ? 'profit' : 'loss');
+
+  const alerts = [];
+  const diff = cash - totalCommitment;
+  if (diff >= 0) alerts.push(`<div class="alert-strip success">✅ موجودی نقد کافی — مازاد: ${formatNum(diff)} ریال</div>`);
+  else alerts.push(`<div class="alert-strip danger">⚠️ کسری نقدینگی: ${formatNum(-diff)} ریال</div>`);
+  document.getElementById('dashAlerts').innerHTML = alerts.join('');
+
+  if (charts.gauge) charts.gauge.destroy();
+  const gaugeCanvas = document.getElementById('gaugeChart');
+  const coveragePct = totalCommitment > 0 ? Math.min(100, (cash / totalCommitment) * 100) : 100;
+  document.getElementById('gaugePercent').textContent = coveragePct.toFixed(1) + '%';
+  if (gaugeCanvas) {
+    charts.gauge = new Chart(gaugeCanvas, {
+      type: 'doughnut',
+      data: { labels: ['مازاد', 'تعهد'], datasets: [{ data: [Math.max(0, cash - totalCommitment), totalCommitment], backgroundColor: ['#27ae60', '#e74c3c'], borderColor: '#fff', borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { font: { family: 'Tahoma', size: 11 }, padding: 10 } } } }
+    });
+  }
+
+  const byExp = {};
+  for (const lot of openLots) { const k = lot.expiry || '-'; byExp[k] = (byExp[k] || 0) + calcCommitment(lot); }
+  const expLabels = Object.keys(byExp).sort();
+  const expColors = ['#3498db', '#9b59b6', '#e67e22', '#16a085', '#c0392b', '#f39c12', '#2980b9', '#8e44ad'];
+  if (charts.expiry) charts.expiry.destroy();
+  const expCanvas = document.getElementById('expiryDonut');
+  if (expCanvas && expLabels.length > 0) {
+    charts.expiry = new Chart(expCanvas, {
+      type: 'doughnut',
+      data: { labels: expLabels, datasets: [{ data: expLabels.map(k => byExp[k]), backgroundColor: expColors.slice(0, expLabels.length), borderColor: '#fff', borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { family: 'Tahoma', size: 11 }, padding: 10, boxWidth: 12 } }, tooltip: { callbacks: { label: c => c.label + ': ' + formatNum(c.parsed) + ' ریال' } } } }
+    });
+  }
+
+  const bySym = {};
+  for (const lot of openLots) { const k = lot.symbol || '-'; bySym[k] = (bySym[k] || 0) + calcCommitment(lot); }
+  const symLabels = Object.keys(bySym).sort();
+  if (charts.symbol) charts.symbol.destroy();
+  const symCanvas = document.getElementById('symbolDonut');
+  if (symCanvas && symLabels.length > 0) {
+    charts.symbol = new Chart(symCanvas, {
+      type: 'doughnut',
+      data: { labels: symLabels, datasets: [{ data: symLabels.map(k => bySym[k]), backgroundColor: expColors.slice(0, symLabels.length).reverse(), borderColor: '#fff', borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { family: 'Tahoma', size: 11 }, padding: 10, boxWidth: 12 } } } }
+    });
+  }
+
+  const byType = { 'خرید کال': 0, 'خرید پوت': 0, 'فروش کال': 0, 'فروش پوت': 0 };
+  for (const lot of openLots) { const dir = lot.direction === 'خرید' ? 'خرید' : 'فروش'; const typ = lot.type === 'call' ? 'کال' : 'پوت'; byType[`${dir} ${typ}`] += calcCommitment(lot); }
+  const typeLabels = Object.keys(byType).filter(k => byType[k] > 0);
+  const typeColors = typeLabels.map(k => k === 'خرید کال' ? '#27ae60' : k === 'خرید پوت' ? '#16a085' : k === 'فروش کال' ? '#e74c3c' : '#e67e22');
+  if (charts.type) charts.type.destroy();
+  const typeCanvas = document.getElementById('typeDonut');
+  if (typeCanvas && typeLabels.length > 0) {
+    charts.type = new Chart(typeCanvas, {
+      type: 'doughnut',
+      data: { labels: typeLabels, datasets: [{ data: typeLabels.map(k => byType[k]), backgroundColor: typeColors, borderColor: '#fff', borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { family: 'Tahoma', size: 11 }, padding: 10, boxWidth: 12 } } } }
+    });
+  }
+
+  const groups = {};
+  for (const lot of openLots) {
+    const key = lot.expiry || '-';
+    if (!groups[key]) groups[key] = { expiry: key, buyCallEx: 0, sellPutEx: 0, sellPutMargin: 0, sellCallMargin: 0, baseShares: 0 };
+    const g = groups[key];
+    if (lot.direction === 'خرید' && lot.type === 'call') g.buyCallEx += calcExercise(lot);
+    if (lot.direction === 'فروش' && lot.type === 'put')  { g.sellPutEx += calcExercise(lot); g.sellPutMargin += calcShortPutMargin(lot); }
+    if (lot.direction === 'فروش' && lot.type === 'call') g.sellCallMargin += calcMargin(lot);
+    if (lot.direction === 'خرید' && lot.type === 'put')  g.baseShares += calcBaseShares(lot);
+  }
+  const tbody = document.getElementById('expirySummaryBody');
+  const tfoot = document.getElementById('expirySummaryFoot');
+  tbody.innerHTML = ''; tfoot.innerHTML = '';
+  const rows = Object.values(groups).sort((a, b) => a.expiry.localeCompare(b.expiry));
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#95a5a6;">موقعیت بازی وجود ندارد</td></tr>';
+  } else {
+    let t1=0, t2=0, tPutM=0, t3=0, tAll=0, tBase=0;
+    for (const r of rows) {
+      const total = r.buyCallEx + r.sellPutEx - r.sellPutMargin + r.sellCallMargin;
+      t1 += r.buyCallEx; t2 += r.sellPutEx; tPutM += r.sellPutMargin; t3 += r.sellCallMargin; tAll += total; tBase += r.baseShares;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b class="num">${r.expiry}</b></td>
+        <td class="num">${formatNum(r.buyCallEx)}</td>
+        <td class="num">${formatNum(r.sellPutEx)}</td>
+        <td class="num" style="color:#e67e22;">−${formatNum(r.sellPutMargin)}</td>
+        <td class="num">${formatNum(r.sellCallMargin)}</td>
+        <td class="num"><b style="color:#e74c3c;">${formatNum(total)}</b></td>
+        <td class="num">${formatNum(r.baseShares)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    tfoot.innerHTML = `<tr style="background:#34495e;color:white;font-weight:bold;">
+      <td>جمع کل</td><td class="num">${formatNum(t1)}</td><td class="num">${formatNum(t2)}</td>
+      <td class="num" style="color:#f39c12;">−${formatNum(tPutM)}</td>
+      <td class="num">${formatNum(t3)}</td><td class="num">${formatNum(tAll)}</td><td class="num">${formatNum(tBase)}</td>
+    </tr>`;
+  }
+}
+
+function renderInput() {
+  const tbody = document.getElementById('inputBody');
+  tbody.innerHTML = '';
+  const filterText = (document.getElementById('inpFilterText')?.value || '').toLowerCase().trim();
+  const filterSymbol = document.getElementById('inpFilterSymbol')?.value || '';
+  const filterType = document.getElementById('inpFilterType')?.value || '';
+  const filterDir = document.getElementById('inpFilterDirection')?.value || '';
+  const filterExpiry = document.getElementById('inpFilterExpiry')?.value || '';
+  state.trades.forEach((t, idx) => {
+    if (filterText && !String(t.option || '').toLowerCase().includes(filterText)) return;
+    if (filterSymbol && t.symbol !== filterSymbol) return;
+    if (filterType && t.type !== filterType) return;
+    if (filterDir && normalizeDirection(t.direction) !== filterDir) return;
+    if (filterExpiry && t.expiry !== filterExpiry) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><select onchange="updateTrade('${t.id}', 'direction', this.value)"><option value="خرید" ${t.direction === 'خرید' ? 'selected' : ''}>خرید</option><option value="فروش" ${t.direction === 'فروش' ? 'selected' : ''}>فروش</option></select></td>
+      <td><select onchange="updateTrade('${t.id}', 'type', this.value)"><option value="call" ${t.type === 'call' ? 'selected' : ''}>call</option><option value="put" ${t.type === 'put' ? 'selected' : ''}>put</option></select></td>
+      <td><input value="${t.symbol || ''}" onchange="updateTrade('${t.id}', 'symbol', this.value)" list="symbolList2" /></td>
+      <td><input value="${t.option || ''}" onchange="onOptionChange('${t.id}', this.value)" list="optionList" /></td>
+      <td><input value="${t.expiry || ''}" onchange="updateTrade('${t.id}', 'expiry', this.value)" /></td>
+      <td><input type="number" value="${t.strike || 0}" onchange="updateTrade('${t.id}', 'strike', this.value)" /></td>
+      <td><input type="number" value="${t.premium || 0}" onchange="updateTrade('${t.id}', 'premium', this.value)" /></td>
+      <td><input type="number" value="${t.qty || 0}" onchange="updateTrade('${t.id}', 'qty', this.value)" /></td>
+      <td><input type="number" value="${t.size || 1000}" onchange="updateTrade('${t.id}', 'size', this.value)" /></td>
+      <td><button class="danger small" onclick="deleteTrade('${t.id}')">🗑</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (tbody.children.length === 0) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#95a5a6;">موردی یافت نشد</td></tr>';
+}
+
+function resetInputFilters() {
+  document.getElementById('inpFilterText').value = '';
+  document.getElementById('inpFilterSymbol').value = '';
+  document.getElementById('inpFilterType').value = '';
+  document.getElementById('inpFilterDirection').value = '';
+  document.getElementById('inpFilterExpiry').value = '';
+  renderInput();
+}
+
+function onOptionChange(id, value) {
+  const t = state.trades.find(x => x.id === id);
+  if (!t) return;
+  t.option = value;
+  const norm = normalizeOption(value);
+  if (norm) {
+    const existing = state.trades.find(x => x.id !== id && normalizeOption(x.option) === norm);
+    if (existing) {
+      if (!t.symbol || t.symbol === '') t.symbol = existing.symbol || '';
+      if (!t.expiry || t.expiry === '') t.expiry = existing.expiry || '';
+      if (!t.strike || t.strike === 0) t.strike = existing.strike || 0;
+      if (!t.type) t.type = existing.type || 'call';
+    }
+  }
+  saveToStorage(); render();
+}
+
+function renderFilterOptions(openLots) {
+  const symbols = new Set(), expiries = new Set(), options = new Set();
+  for (const t of state.trades) { if (t.symbol) symbols.add(t.symbol); if (t.expiry) expiries.add(t.expiry); if (t.option) options.add(t.option); }
+  document.getElementById('optionList').innerHTML = [...options].sort().map(o => `<option value="${o}">`).join('');
+  document.getElementById('symbolList2').innerHTML = [...symbols].sort().map(s => `<option value="${s}">`).join('');
+  const inpSym = document.getElementById('inpFilterSymbol');
+  const inpExp = document.getElementById('inpFilterExpiry');
+  const curSym = inpSym.value, curExp = inpExp.value;
+  inpSym.innerHTML = '<option value="">همه</option>' + [...symbols].sort().map(s => `<option value="${s}" ${s === curSym ? 'selected' : ''}>${s}</option>`).join('');
+  inpExp.innerHTML = '<option value="">همه</option>' + [...expiries].sort().map(s => `<option value="${s}" ${s === curExp ? 'selected' : ''}>${s}</option>`).join('');
+  const fSym = document.getElementById('filterSymbol');
+  const fExp = document.getElementById('filterExpiry');
+  const openSymbols = new Set(), openExpiries = new Set();
+  for (const lot of openLots) { if (lot.symbol) openSymbols.add(lot.symbol); if (lot.expiry) openExpiries.add(lot.expiry); }
+  const curFSym = fSym.value, curFExp = fExp.value;
+  fSym.innerHTML = '<option value="">همه</option>' + [...openSymbols].sort().map(s => `<option value="${s}" ${s === curFSym ? 'selected' : ''}>${s}</option>`).join('');
+  fExp.innerHTML = '<option value="">همه</option>' + [...openExpiries].sort().map(s => `<option value="${s}" ${s === curFExp ? 'selected' : ''}>${s}</option>`).join('');
+  const opSym = document.getElementById('opFilterSymbol');
+  const opExp = document.getElementById('opFilterExpiry');
+  const curOpSym = opSym.value, curOpExp = opExp.value;
+  opSym.innerHTML = '<option value="">همه</option>' + [...openSymbols].sort().map(s => `<option value="${s}" ${s === curOpSym ? 'selected' : ''}>${s}</option>`).join('');
+  opExp.innerHTML = '<option value="">همه</option>' + [...openExpiries].sort().map(s => `<option value="${s}" ${s === curOpExp ? 'selected' : ''}>${s}</option>`).join('');
+  document.getElementById('symbolList').innerHTML = [...symbols].sort().map(s => `<option value="${s}">`).join('');
+  const loadSel = document.getElementById('loadSymbolFilter');
+  const curLoad = loadSel.value;
+  loadSel.innerHTML = '<option value="">همه نمادها</option>' + [...symbols].sort().map(s => `<option value="${s}" ${s === curLoad ? 'selected' : ''}>${s}</option>`).join('');
+}
+
+function resetFilters() {
+  document.getElementById('sortField').value = 'symbol';
+  document.getElementById('sortOrder').value = 'asc';
+  document.getElementById('filterSymbol').value = '';
+  document.getElementById('filterExpiry').value = '';
+  document.getElementById('filterType').value = '';
+  renderSummary();
+}
+
+function renderSummary() {
+  const openLots = cachedOpenLots;
+  const sortField = document.getElementById('sortField')?.value || 'symbol';
+  const sortOrder = document.getElementById('sortOrder')?.value || 'asc';
+  const filterSymbol = document.getElementById('filterSymbol')?.value || '';
+  const filterExpiry = document.getElementById('filterExpiry')?.value || '';
+  const filterType = document.getElementById('filterType')?.value || '';
+  const groups = {};
+  for (const lot of openLots) {
+    const key = (lot.symbol || '') + '||' + (lot.expiry || '') + '||' + (lot.type || '') + '||' + (lot.direction || '');
+    if (!groups[key]) groups[key] = { symbol: lot.symbol || '-', expiry: lot.expiry || '-', type: lot.type, direction: lot.direction, qty: 0, paid: 0, received: 0, margin: 0, exercise: 0, baseShares: 0, wasOffset: false };
+    const g = groups[key];
+    g.qty += lot.remaining;
+    const prem = calcPremium(lot);
+    if (lot.direction === 'خرید') g.paid += prem; else g.received += prem;
+    g.margin += calcMargin(lot); g.exercise += calcExercise(lot); g.baseShares += calcBaseShares(lot);
+  }
+  for (const c of cachedClosedLots) {
+    for (const gk in groups) {
+      const g = groups[gk];
+      if (g.symbol === c.symbol && g.type === c.type) {
+        const dir = c.direction === 'Long' ? 'خرید' : 'فروش';
+        if (g.direction === dir) g.wasOffset = true;
+      }
+    }
+  }
+  let rows = Object.values(groups);
+  if (filterSymbol) rows = rows.filter(r => r.symbol === filterSymbol);
+  if (filterExpiry) rows = rows.filter(r => r.expiry === filterExpiry);
+  if (filterType)   rows = rows.filter(r => r.type === filterType);
+  for (const r of rows) r.commitTotal = r.margin + r.exercise;
+  const dir = sortOrder === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let va = a[sortField], vb = b[sortField];
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+    return String(va || '').localeCompare(String(vb || '')) * dir;
+  });
+  const tbody = document.getElementById('summaryBody');
+  tbody.innerHTML = '';
+  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#95a5a6;">موردی یافت نشد</td></tr>'; return; }
+  for (const r of rows) {
+    const typeLabel = r.type === 'call' ? 'کال (Call)' : 'پوت (Put)';
+    const dirBadge = r.direction === 'خرید' ? '<span class="badge long">Long</span>' : '<span class="badge short">Short</span>';
+    const statusBadge = r.wasOffset ? '<span class="badge offset">آفست</span>' : '<span class="badge buy">فعال</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${r.symbol}</b></td><td class="num">${r.expiry}</td><td>${typeLabel}</td><td>${dirBadge}</td><td class="num">${formatNum(r.qty)}</td><td class="num neg">${formatNum(r.paid)}</td><td class="num pos">${formatNum(r.received)}</td><td class="num">${formatNum(r.margin)}</td><td class="num">${formatNum(r.exercise)}</td><td class="num">${formatNum(r.baseShares)}</td><td>${statusBadge}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function resetOpenPosFilters() {
+  document.getElementById('opFilterSymbol').value = '';
+  document.getElementById('opFilterType').value = '';
+  document.getElementById('opFilterDirection').value = '';
+  document.getElementById('opFilterExpiry').value = '';
+  renderOpenPositions();
+}
+
+function renderOpenPositions() {
+  const tbody = document.getElementById('openPosBody');
+  const tfoot = document.getElementById('openPosFoot');
+  tbody.innerHTML = ''; tfoot.innerHTML = '';
+  const fSym = document.getElementById('opFilterSymbol')?.value || '';
+  const fType = document.getElementById('opFilterType')?.value || '';
+  const fDir = document.getElementById('opFilterDirection')?.value || '';
+  const fExp = document.getElementById('opFilterExpiry')?.value || '';
+  let lots = cachedOpenLots.filter(lot => {
+    if (fSym && lot.symbol !== fSym) return false;
+    if (fType && lot.type !== fType) return false;
+    if (fDir && lot.direction !== fDir) return false;
+    if (fExp && lot.expiry !== fExp) return false;
+    return true;
+  });
+  if (lots.length === 0) { tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:30px;color:#95a5a6;">موقعیت بازی وجود ندارد</td></tr>'; return; }
+  let tCommit = 0, tBase = 0, tPrem = 0;
+  const sorted = [...lots].sort((a, b) => (a.symbol || '').localeCompare(b.symbol || '') || (a.expiry || '').localeCompare(b.expiry || '') || (a.type || '').localeCompare(b.type || ''));
+  for (const lot of sorted) {
+    const isLong = lot.direction === 'خرید';
+    const commit = calcCommitment(lot), base = calcBaseShares(lot), prem = calcPremium(lot), be = calcBreakeven(lot);
+    tCommit += commit; tBase += base; tPrem += prem;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${lot.option}</b></td><td>${lot.symbol}</td><td><span class="badge ${lot.type}">${lot.type === 'call' ? 'کال' : 'پوت'}</span></td><td class="num">${lot.expiry}</td><td class="num">${formatNum(lot.strike)}</td><td class="num">${formatNum(lot.price)}</td><td class="num"><span class="badge be">${formatNum(be)}</span></td><td><span class="badge ${isLong ? 'long' : 'short'}">${isLong ? 'Long' : 'Short'}</span></td><td class="num"><b>${formatNum(lot.remaining)}</b></td><td class="num ${isLong ? 'neg' : 'pos'}">${formatNum(prem)}</td><td class="num">${formatNum(commit)}</td><td class="num">${formatNum(base)}</td>`;
+    tbody.appendChild(tr);
+  }
+  tfoot.innerHTML = `<tr style="background:#34495e;color:white;font-weight:bold;"><td colspan="9">جمع کل</td><td class="num">${formatNum(tPrem)}</td><td class="num">${formatNum(tCommit)}</td><td class="num">${formatNum(tBase)}</td></tr>`;
+}
+
+function renderArchiveFilters() {
+  const symbols = new Set(), options = new Set(), expiries = new Set();
+  for (const c of cachedClosedLots) { if (c.symbol) symbols.add(c.symbol); if (c.code) options.add(c.code); }
+  for (const t of state.trades) if (t.expiry) expiries.add(t.expiry);
+  const sSel = document.getElementById('archFilterSymbol');
+  const oSel = document.getElementById('archFilterOption');
+  const eSel = document.getElementById('archFilterExpiry');
+  const curS = sSel.value, curO = oSel.value, curE = eSel.value;
+  sSel.innerHTML = '<option value="">همه</option>' + [...symbols].sort().map(s => `<option value="${s}" ${s === curS ? 'selected' : ''}>${s}</option>`).join('');
+  oSel.innerHTML = '<option value="">همه</option>' + [...options].sort().map(s => `<option value="${s}" ${s === curO ? 'selected' : ''}>${s}</option>`).join('');
+  eSel.innerHTML = '<option value="">همه</option>' + [...expiries].sort().map(s => `<option value="${s}" ${s === curE ? 'selected' : ''}>${s}</option>`).join('');
+  updateArchiveFilterCount();
+}
+
+function getFilteredClosedLots() {
+  const sFilter = document.getElementById('archFilterSymbol').value;
+  const oFilter = document.getElementById('archFilterOption').value;
+  const eFilter = document.getElementById('archFilterExpiry').value;
+  const dFrom = document.getElementById('archFilterDateFrom').value;
+  const dTo = document.getElementById('archFilterDateTo').value;
+  return cachedClosedLots.filter(c => {
+    if (sFilter && c.symbol !== sFilter) return false;
+    if (oFilter && c.code !== oFilter) return false;
+    if (eFilter) { const t = state.trades.find(x => x.option === c.code); if (!t || t.expiry !== eFilter) return false; }
+    const key = makeClosedKey(c);
+    const info = getArchiveInfo(key);
+    if (dFrom || dTo) { if (!info) return false; const d = new Date(info.archivedAt); const dStr = d.toISOString().split('T')[0]; if (dFrom && dStr < dFrom) return false; if (dTo && dStr > dTo) return false; }
+    return true;
+  });
+}
+function updateArchiveFilterCount() {
+  try {
+    const filtered = getFilteredClosedLots();
+    const archivedCount = filtered.filter(c => isArchived(makeClosedKey(c))).length;
+    const activeCount = filtered.length - archivedCount;
+    document.getElementById('archFilterCount').textContent = `${filtered.length} ردیف (${archivedCount} آرشیو، ${activeCount} فعال)`;
+  } catch(e) {}
+}
+function restoreFilteredArchives() {
+  const filtered = getFilteredClosedLots().filter(c => isArchived(makeClosedKey(c)));
+  if (filtered.length === 0) { alert('موردی پیدا نشد'); return; }
+  if (!confirm(`${filtered.length} ردیف بازگردانده شوند؟`)) return;
+  const keysToRestore = new Set(filtered.map(c => makeClosedKey(c)));
+  state.archivedItems = state.archivedItems.filter(x => !keysToRestore.has(x.key));
+  saveToStorage(); render();
+}
+function archiveFilteredClosed() {
+  const filtered = getFilteredClosedLots().filter(c => !isArchived(makeClosedKey(c)));
+  if (filtered.length === 0) { alert('موردی پیدا نشد'); return; }
+  if (!confirm(`${filtered.length} ردیف آرشیو شوند؟`)) return;
+  const now = Date.now();
+  for (const c of filtered) state.archivedItems.push({ key: makeClosedKey(c), archivedAt: now });
+  saveToStorage(); render();
+}
+function resetArchiveFilters() {
+  document.getElementById('archFilterSymbol').value = '';
+  document.getElementById('archFilterOption').value = '';
+  document.getElementById('archFilterExpiry').value = '';
+  document.getElementById('archFilterDateFrom').value = '';
+  document.getElementById('archFilterDateTo').value = '';
+  updateArchiveFilterCount();
+}
+function toggleCollapsible(id, header) { const body = document.getElementById(id); if (!body) return; body.classList.toggle('hidden'); header.classList.toggle('closed'); }
+
+function renderClosedPositions(closedLots) {
+  const tbody = document.getElementById('closedPosBody');
+  tbody.innerHTML = '';
+  const showArchived = document.getElementById('showArchived')?.checked || false;
+  const onlyActive = document.getElementById('onlyActiveSymbols')?.checked || false;
+  let activeProfit = 0, activeLoss = 0, archivedPnL = 0;
+  for (const c of closedLots) {
+    const key = makeClosedKey(c);
+    if (isArchived(key)) archivedPnL += c.pnl;
+    else { if (c.pnl >= 0) activeProfit += c.pnl; else activeLoss += c.pnl; }
+  }
+  document.getElementById('totalProfit').textContent = formatNum(activeProfit);
+  document.getElementById('totalLoss').textContent = formatNum(activeLoss);
+  const netActive = activeProfit + activeLoss;
+  document.getElementById('netPnL').textContent = formatNum(netActive);
+  document.getElementById('netPnLCard').className = 'big-card ' + (netActive >= 0 ? 'profit' : 'loss');
+  document.getElementById('archivedPnL').textContent = formatNum(archivedPnL);
+  document.getElementById('archivedPnL').className = archivedPnL >= 0 ? 'pos' : 'neg';
+  const grandTotal = netActive + archivedPnL;
+  document.getElementById('grandTotalPnL').textContent = formatNum(grandTotal);
+  document.getElementById('grandTotalPnLCard').className = 'big-card ' + (grandTotal >= 0 ? 'profit' : 'loss');
+  const visible = showArchived ? closedLots : closedLots.filter(c => !isArchived(makeClosedKey(c)));
+  if (closedLots.length === 0) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#95a5a6;">موردی نیست</td></tr>';
+  else if (visible.length === 0) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#95a5a6;">همه آرشیو شده‌اند</td></tr>';
+  else {
+    const sorted = [...visible].sort((a, b) => b.exitOrder - a.exitOrder);
+    for (const c of sorted) {
+      const key = makeClosedKey(c);
+      const isArch = isArchived(key);
+      const info = getArchiveInfo(key);
+      const tr = document.createElement('tr');
+      tr.className = isArch ? 'archived-row' : 'closed-row';
+      tr.innerHTML = `<td>${isArch ? '<span class="badge archived">آرشیو</span>' : '<span class="badge buy">فعال</span>'}</td><td><b>${c.code}</b></td><td>${c.symbol}</td><td>${c.type === 'call' ? 'کال' : 'پوت'}</td><td><span class="badge ${c.direction === 'Long' ? 'long' : 'short'}">${c.direction === 'Long' ? 'Long بسته' : 'Short بسته'}</span></td><td class="num">${formatNum(c.qty)}</td><td class="num">${formatNum(c.entryPrice)}</td><td class="num">${formatNum(c.exitPrice)}</td><td class="num ${c.pnl >= 0 ? 'pos' : 'neg'}">${formatNum(c.pnl)}</td><td class="num">${isArch && info ? formatDate(info.archivedAt) : '-'}</td><td>${isArch ? `<button class="gray small" onclick="unarchiveOne('${key}')">♻</button>` : `<button class="warning small" onclick="archiveOne('${key}')">📦</button>`}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+  const pnlGroups = {};
+  for (const c of closedLots) {
+    const key = (c.symbol || '') + '||' + (c.code || '') + '||' + (c.type || '');
+    if (!pnlGroups[key]) pnlGroups[key] = { symbol: c.symbol, option: c.code, type: c.type, qty: 0, pnl: 0, activeQty: 0 };
+    pnlGroups[key].qty += c.qty; pnlGroups[key].pnl += c.pnl;
+    if (!isArchived(makeClosedKey(c))) pnlGroups[key].activeQty += c.qty;
+  }
+  const ptbody = document.getElementById('pnlBySymbolBody');
+  ptbody.innerHTML = '';
+  let prows = Object.values(pnlGroups).sort((a, b) => b.pnl - a.pnl);
+  if (onlyActive) prows = prows.filter(r => r.activeQty > 0);
+  if (prows.length === 0) ptbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#95a5a6;">موردی نیست</td></tr>';
+  else {
+    for (const r of prows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${r.symbol}</b></td><td>${r.option}</td><td>${r.type === 'call' ? 'کال' : 'پوت'}</td><td class="num">${formatNum(r.qty)}</td><td class="num ${r.pnl >= 0 ? 'pos' : 'neg'}">${formatNum(r.pnl)}</td>`;
+      ptbody.appendChild(tr);
+    }
+  }
+}
+
+function archiveOne(key) { if (!isArchived(key)) { state.archivedItems.push({ key, archivedAt: Date.now() }); saveToStorage(); renderClosedPositions(cachedClosedLots); } }
+function unarchiveOne(key) { state.archivedItems = state.archivedItems.filter(x => x.key !== key); saveToStorage(); renderClosedPositions(cachedClosedLots); }
+function archiveAllClosed() { if (cachedClosedLots.length === 0) return; if (!confirm('همه آرشیو شوند؟')) return; const now = Date.now(); for (const c of cachedClosedLots) { const k = makeClosedKey(c); if (!isArchived(k)) state.archivedItems.push({ key: k, archivedAt: now }); } saveToStorage(); render(); }
+function unarchiveAll() { if (state.archivedItems.length === 0) return; if (!confirm('همه بازگردانده شوند؟')) return; state.archivedItems = []; saveToStorage(); render(); }
+
+function renderDiagnose() {
+  const out = document.getElementById('diagnoseOutput');
+  if (!out) return;
+  const groups = {};
+  state.trades.forEach((t, idx) => {
+    const key = makeKey(t);
+    if (!groups[key]) groups[key] = { key, rawOptions: new Set(), trades: [] };
+    groups[key].rawOptions.add(String(t.option || ''));
+    groups[key].trades.push({ ...t, _order: idx });
+  });
+  let html = '';
+  html += `<div class="helper"><b>کل معاملات:</b> ${state.trades.length} | <b>گروه‌های یکتا:</b> ${Object.keys(groups).length} | <b>بسته:</b> ${cachedClosedLots.length} | <b>باز:</b> ${cachedOpenLots.length}</div>`;
+  html += '<h3>⚠️ گروه‌های با چند شکل نوشتاری</h3>';
+  let hasConflict = false;
+  for (const key in groups) {
+    const g = groups[key];
+    if (g.rawOptions.size > 1) {
+      hasConflict = true;
+      html += `<div class="helper" style="background:#fef5e7; border-right:4px solid #f39c12;"><b>کلید:</b> <code>${key}</code><br><b>شکل‌ها:</b> ${[...g.rawOptions].map(o => `«${o}»`).join(' ، ')}</div>`;
+    }
+  }
+  if (!hasConflict) html += '<div class="helper" style="background:#eafaf1; color:#1e8449;">✓ همه یک شکل دارن</div>';
+  html += '<h3>📊 جزئیات هر گروه</h3><div style="overflow-x:auto;"><table><thead><tr><th>کد</th><th>نوع</th><th>خرید</th><th>فروش</th><th>Long باز</th><th>Short باز</th><th>بسته</th><th>وضعیت</th></tr></thead><tbody>';
+  for (const key of Object.keys(groups).sort()) {
+    const g = groups[key];
+    let buyQty = 0, sellQty = 0, buyCount = 0, sellCount = 0;
+    for (const t of g.trades) {
+      const q = (Number(t.qty) || 0) * (Number(t.size) || 0);
+      if (normalizeDirection(t.direction) === 'خرید') { buyQty += q; buyCount++; } else { sellQty += q; sellCount++; }
+    }
+    let longOpen = 0, shortOpen = 0;
+    for (const lot of cachedOpenLots) if (makeKey(lot) === key) { if (lot.direction === 'خرید') longOpen += lot.remaining; else shortOpen += lot.remaining; }
+    let closedQty = 0;
+    for (const c of cachedClosedLots) if ((normalizeOption(c.code) + '||' + (c.type || '').toLowerCase()) === key) closedQty += (Number(c.qty) || 0) * (Number(c.size) || 1);
+    let statusBadge = '';
+    if (sellCount === 0 && buyCount > 0) statusBadge = '<span class="badge buy">فقط خرید</span>';
+    else if (buyCount === 0 && sellCount > 0) statusBadge = '<span class="badge sell">فقط فروش</span>';
+    else if (closedQty > 0) statusBadge = '<span class="badge long">✓ تطبیق شد</span>';
+    else statusBadge = '<span class="badge warn">بدون تطبیق</span>';
+    html += `<tr><td><b>${[...g.rawOptions].join(' / ')}</b></td><td>${g.trades[0].type === 'call' ? 'کال' : 'پوت'}</td><td class="num">${buyCount} (${formatNum(buyQty)})</td><td class="num">${sellCount} (${formatNum(sellQty)})</td><td class="num">${longOpen > 0 ? '<b class="pos">' + formatNum(longOpen) + '</b>' : '-'}</td><td class="num">${shortOpen > 0 ? '<b class="neg">' + formatNum(shortOpen) + '</b>' : '-'}</td><td class="num">${closedQty > 0 ? formatNum(closedQty) : '-'}</td><td>${statusBadge}</td></tr>`;
+  }
+  html += '</tbody></table></div>';
+  out.innerHTML = html;
+}
+
+function updateStrategyMeta() {
+  state.strategyMeta = { symbol: document.getElementById('metaSymbol').value.trim(), expiry: document.getElementById('metaExpiry').value.trim(), currentPrice: Number(document.getElementById('metaCurrentPrice').value) || 0 };
+  saveToStorage(); renderStrategyChart(); renderStrategySummary();
+}
+function renderStrategyMeta() {
+  const m = state.strategyMeta || { symbol: '', expiry: '', currentPrice: 0 };
+  document.getElementById('metaSymbol').value = m.symbol || '';
+  document.getElementById('metaExpiry').value = m.expiry || '';
+  document.getElementById('metaCurrentPrice').value = m.currentPrice || '';
+}
+function addStrategyLeg() { state.strategyLegs.push({ id: genId(), type: 'call', direction: 'خرید', strike: 0, premium: 0, qty: 1, size: 1000, label: '' }); saveToStorage(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary(); }
+function updateStrategyLeg(id, field, value) { const leg = state.strategyLegs.find(l => l.id === id); if (!leg) return; if (['strike', 'premium', 'qty', 'size'].includes(field)) leg[field] = Number(value) || 0; else leg[field] = value; saveToStorage(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary(); }
+function deleteStrategyLeg(id) { state.strategyLegs = state.strategyLegs.filter(l => l.id !== id); saveToStorage(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary(); }
+function clearStrategy() { if (!confirm('پای‌های استراتژی پاک شوند؟')) return; state.strategyLegs = []; saveToStorage(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary(); }
+function loadFromOpenPositions() {
+  const filterSym = document.getElementById('loadSymbolFilter').value;
+  if (!confirm(`بارگذاری؟`)) return;
+  state.strategyLegs = [];
+  const symbols = new Set(), expiries = new Set();
+  for (const lot of cachedOpenLots) {
+    if (filterSym && lot.symbol !== filterSym) continue;
+    state.strategyLegs.push({ id: genId(), type: lot.type, direction: lot.direction === 'خرید' ? 'خرید' : 'فروش', strike: lot.strike, premium: lot.price, qty: lot.remaining / (lot.size || 1), size: lot.size, label: (lot.symbol || '') + ' ' + (lot.option || '') });
+    if (lot.symbol) symbols.add(lot.symbol);
+    if (lot.expiry) expiries.add(lot.expiry);
+  }
+  if (state.strategyLegs.length === 0) { alert('هیچ موقعیت بازی پیدا نشد'); return; }
+  const meta = state.strategyMeta || { symbol: '', expiry: '', currentPrice: 0 };
+  if (filterSym) meta.symbol = filterSym;
+  else if (!meta.symbol && symbols.size === 1) meta.symbol = [...symbols][0];
+  if (!meta.expiry && expiries.size === 1) meta.expiry = [...expiries][0];
+  state.strategyMeta = meta;
+  saveToStorage(); renderStrategyMeta(); renderStrategyLegs(); renderStrategyChart(); renderStrategySummary();
+}
+function renderStrategyLegs() {
+  const tbody = document.getElementById('strategyBody');
+  tbody.innerHTML = '';
+  state.strategyLegs.forEach((leg, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${idx + 1}</td><td><select onchange="updateStrategyLeg('${leg.id}', 'type', this.value)"><option value="call" ${leg.type === 'call' ? 'selected' : ''}>call</option><option value="put" ${leg.type === 'put' ? 'selected' : ''}>put</option></select></td><td><select onchange="updateStrategyLeg('${leg.id}', 'direction', this.value)"><option value="خرید" ${leg.direction === 'خرید' ? 'selected' : ''}>خرید</option><option value="فروش" ${leg.direction === 'فروش' ? 'selected' : ''}>فروش</option></select></td><td><input type="number" value="${leg.strike}" onchange="updateStrategyLeg('${leg.id}', 'strike', this.value)" /></td><td><input type="number" value="${leg.premium}" onchange="updateStrategyLeg('${leg.id}', 'premium', this.value)" /></td><td><input type="number" value="${leg.qty}" onchange="updateStrategyLeg('${leg.id}', 'qty', this.value)" /></td><td><input type="number" value="${leg.size}" onchange="updateStrategyLeg('${leg.id}', 'size', this.value)" /></td><td><input value="${leg.label || ''}" onchange="updateStrategyLeg('${leg.id}', 'label', this.value)" /></td><td><button class="danger small" onclick="deleteStrategyLeg('${leg.id}')">🗑</button></td>`;
+    tbody.appendChild(tr);
+  });
+  if (state.strategyLegs.length === 0) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#95a5a6;">پای استراتژی اضافه نشده</td></tr>';
+}
+function payoffOfLeg(leg, S) {
+  const K = Number(leg.strike) || 0, P = Number(leg.premium) || 0, N = (Number(leg.qty) || 0) * (Number(leg.size) || 0);
+  const isBuy = leg.direction === 'خرید';
+  if (leg.type === 'call') { const intrinsic = Math.max(0, S - K); return isBuy ? (intrinsic - P) * N : (P - intrinsic) * N; }
+  else { const intrinsic = Math.max(0, K - S); return isBuy ? (intrinsic - P) * N : (P - intrinsic) * N; }
+}
+function totalPayoff(legs, S) { let sum = 0; for (const leg of legs) sum += payoffOfLeg(leg, S); return sum; }
+function renderStrategySummary() {
+  let paid = 0, received = 0, margin = 0, longCallEx = 0, shortPutEx = 0;
+  for (const leg of state.strategyLegs) {
+    const K = Number(leg.strike) || 0, P = Number(leg.premium) || 0, N = (Number(leg.qty) || 0) * (Number(leg.size) || 0);
+    if (leg.direction === 'خرید') paid += P * N; else received += P * N;
+    if (leg.direction === 'فروش' && leg.type === 'call') margin += (state.settings.marginPercent / 100) * K * N;
+    if (leg.direction === 'خرید' && leg.type === 'call') longCallEx += K * N;
+    if (leg.direction === 'فروش' && leg.type === 'put') shortPutEx += K * N;
+  }
+  document.getElementById('sumPremiumPaid').textContent = formatNum(paid);
+  document.getElementById('sumPremiumReceived').textContent = formatNum(received);
+  document.getElementById('sumMargin').textContent = formatNum(margin);
+  document.getElementById('sumLongCallEx').textContent = formatNum(longCallEx);
+  document.getElementById('sumShortPutEx').textContent = formatNum(shortPutEx);
+  document.getElementById('sumTotalCommit').textContent = formatNum(margin + longCallEx + shortPutEx);
+}
+
+function findClosestLabelIndex(chart, value) {
+  const labels = chart.data.labels || [];
+  let best = 0, bestDiff = Infinity;
+  for (let i = 0; i < labels.length; i++) { const d = Math.abs(Number(labels[i]) - value); if (d < bestDiff) { bestDiff = d; best = i; } }
+  return best;
+}
+const zeroLinePlugin = { id: 'zeroLine', beforeDatasetsDraw(chart) { try { const { ctx, chartArea, scales } = chart; const y = scales.y.getPixelForValue(0); if (y < chartArea.top || y > chartArea.bottom) return; ctx.save(); ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(chartArea.left, y); ctx.lineTo(chartArea.right, y); ctx.stroke(); ctx.restore(); } catch(e) {} } };
+const beLinesPlugin = { id: 'beLines', afterDatasetsDraw(chart) { try { const { ctx, chartArea, scales } = chart; const bes = currentBreakevens || []; if (bes.length === 0) return; const currentPrice = Number(state.strategyMeta?.currentPrice) || 0; ctx.save(); for (const be of bes) { const idx = findClosestLabelIndex(chart, be); const x = scales.x.getPixelForValue(idx); if (x < chartArea.left || x > chartArea.right) continue; ctx.setLineDash([6, 4]); ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke(); ctx.setLineDash([]); let label = 'سر به سر: ' + Math.round(be).toLocaleString('en-US'); if (currentPrice > 0) { const pct = ((be - currentPrice) / currentPrice) * 100; label += ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`; } ctx.fillStyle = '#9b59b6'; ctx.font = 'bold 11px Tahoma'; ctx.textAlign = 'center'; const w = ctx.measureText(label).width + 12; ctx.fillRect(x - w/2, chartArea.top - 2, w, 18); ctx.fillStyle = 'white'; ctx.fillText(label, x, chartArea.top + 12); } ctx.restore(); } catch(e) {} } };
+const currentPosPlugin = { id: 'currentPos', afterDatasetsDraw(chart) { try { const { ctx, chartArea, scales } = chart; const currentPrice = Number(state.strategyMeta?.currentPrice) || 0; if (currentPrice <= 0) return; const legs = state.strategyLegs; if (legs.length === 0) return; const currentPnL = totalPayoff(legs, currentPrice); const idx = findClosestLabelIndex(chart, currentPrice); const x = scales.x.getPixelForValue(idx); const y = scales.y.getPixelForValue(currentPnL); if (x < chartArea.left || x > chartArea.right) return; ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke(); ctx.restore(); ctx.save(); ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.fillStyle = '#e67e22'; ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.stroke(); const pnlText = (currentPnL >= 0 ? '+' : '') + Math.round(currentPnL).toLocaleString('en-US'); ctx.font = 'bold 12px Tahoma'; ctx.textAlign = 'center'; const textW = ctx.measureText(pnlText).width + 14; let labelY = y - 20; if (y < chartArea.top + 30) labelY = y + 30; ctx.fillStyle = currentPnL >= 0 ? '#27ae60' : '#e74c3c'; ctx.fillRect(x - textW/2, labelY - 12, textW, 20); ctx.fillStyle = 'white'; ctx.fillText(pnlText, x, labelY + 2); ctx.restore(); ctx.save(); ctx.fillStyle = '#e67e22'; ctx.font = 'bold 11px Tahoma'; ctx.textAlign = 'center'; const label = 'قیمت فعلی: ' + Math.round(currentPrice).toLocaleString('en-US'); const w = ctx.measureText(label).width + 12; ctx.fillRect(x - w/2, chartArea.bottom - 20, w, 18); ctx.fillStyle = 'white'; ctx.fillText(label, x, chartArea.bottom - 7); ctx.restore(); } catch(e) {} } };
+
+function renderStrategyChart() {
+  try {
+    const legs = state.strategyLegs;
+    const canvas = document.getElementById('strategyChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (window.myStrategyChart) { try { window.myStrategyChart.destroy(); } catch(e){} }
+    if (legs.length === 0) {
+      document.getElementById('lowerBE').textContent = '-';
+      document.getElementById('upperBE').textContent = '-';
+      document.getElementById('maxProfit').textContent = '-';
+      document.getElementById('maxLoss').textContent = '-';
+      document.getElementById('metaCurrentPnL').value = '-';
+      currentBreakevens = [];
+      return;
+    }
+    const strikes = legs.map(l => Number(l.strike) || 0).filter(s => s > 0);
+    if (strikes.length === 0) return;
+    const minK = Math.min(...strikes), maxK = Math.max(...strikes);
+    const range = (maxK - minK) || maxK || 1;
+    const startS = Math.max(0, Math.floor(minK - range * 0.6));
+    const endS = Math.ceil(maxK + range * 0.6);
+    const steps = 250;
+    const prices = [], payoffs = [];
+    const step = (endS - startS) / steps;
+    let maxP = -Infinity, minP = Infinity;
+    for (let i = 0; i <= steps; i++) { const S = startS + step * i; const p = totalPayoff(legs, S); prices.push(S); payoffs.push(p); if (p > maxP) maxP = p; if (p < minP) minP = p; }
+    const breakevens = [];
+    for (let i = 1; i < payoffs.length; i++) { const a = payoffs[i-1], b = payoffs[i]; if ((a <= 0 && b > 0) || (a >= 0 && b < 0)) { const ratio = Math.abs(a) / (Math.abs(a) + Math.abs(b)); breakevens.push(prices[i-1] + ratio * (prices[i] - prices[i-1])); } }
+    currentBreakevens = breakevens;
+    document.getElementById('lowerBE').textContent = breakevens.length > 0 ? formatNum(breakevens[0]) : '-';
+    document.getElementById('upperBE').textContent = breakevens.length > 1 ? formatNum(breakevens[breakevens.length - 1]) : (breakevens.length === 1 ? formatNum(breakevens[0]) : '-');
+    document.getElementById('maxProfit').textContent = formatNum(maxP);
+    document.getElementById('maxLoss').textContent = formatNum(minP);
+    const currentPrice = Number(state.strategyMeta?.currentPrice) || 0;
+    if (currentPrice > 0) document.getElementById('metaCurrentPnL').value = formatNum(totalPayoff(legs, currentPrice));
+    else document.getElementById('metaCurrentPnL').value = '-';
+
+    window.myStrategyChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: prices.map(p => Math.round(p)),
+        datasets: [{ label: 'سود/زیان', data: payoffs, borderColor: '#2c3e50', backgroundColor: 'rgba(52,152,219,0.08)', borderWidth: 3, pointRadius: 0, pointHoverRadius: 6, pointHoverBackgroundColor: '#9b59b6', pointHoverBorderColor: 'white', pointHoverBorderWidth: 2, fill: false, tension: 0, segment: { borderColor: function(c) { try { const y0 = c.p0.parsed.y, y1 = c.p1.parsed.y; if (y0 >= 0 && y1 >= 0) return '#27ae60'; if (y0 < 0 && y1 < 0) return '#e74c3c'; return ((y0 + y1) / 2) >= 0 ? '#27ae60' : '#e74c3c'; } catch(e) { return '#2c3e50'; } } } }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false },
+          tooltip: { backgroundColor: 'rgba(44, 62, 80, 0.95)', titleFont: { family: 'Tahoma', size: 13 }, bodyFont: { family: 'Tahoma', size: 12 }, padding: 12, displayColors: false,
+            callbacks: { title: function(items) { return 'قیمت پایه: ' + Number(items[0].label).toLocaleString('en-US') + ' ریال'; },
+              label: function(item) { const v = item.parsed.y; const sign = v >= 0 ? 'سود' : 'زیان'; const lines = [sign + ': ' + Math.abs(v).toLocaleString('en-US') + ' ریال']; if (currentPrice > 0) { const px = Number(item.label); const pct = ((px - currentPrice) / currentPrice) * 100; lines.push(`نسبت به قیمت فعلی: ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`); } return lines; } } } },
+        scales: { x: { title: { display: true, text: 'قیمت دارایی پایه در سررسید (ریال)', font: { family: 'Tahoma' } }, ticks: { maxTicksLimit: 12, font: { family: 'Tahoma' } } }, y: { title: { display: true, text: 'سود/زیان (ریال)', font: { family: 'Tahoma' } }, ticks: { callback: v => v.toLocaleString('en-US'), font: { family: 'Tahoma' } } } } },
+      plugins: [zeroLinePlugin, beLinesPlugin, currentPosPlugin]
+    });
+  } catch(e) { console.error('renderStrategyChart:', e); }
+}
+
+function updateTrade(id, field, value) { const t = state.trades.find(x => x.id === id); if (!t) return; if (['strike', 'premium', 'qty', 'size'].includes(field)) t[field] = Number(value) || 0; else t[field] = value; saveToStorage(); render(); }
+function addTrade() {
+  const lastTrade = state.trades[state.trades.length - 1];
+  state.trades.push({ id: genId(), direction: 'خرید', type: lastTrade?.type || 'call', symbol: '', option: '', expiry: '', strike: 0, premium: 0, qty: 0, size: 1000 });
+  saveToStorage(); render();
+  setTimeout(() => { const tbody = document.getElementById('inputBody'); if (tbody.lastElementChild) tbody.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+}
+function deleteTrade(id) { if (!confirm('حذف شود؟')) return; state.trades = state.trades.filter(t => t.id !== id); saveToStorage(); render(); }
+function clearAll() { if (!confirm('⚠ همه حذف شوند؟')) return; state.trades = []; saveToStorage(); render(); }
+function pasteFromExcel() {
+  const text = prompt('محتوای اکسل:\nموقعیت | نوع | نماد | نماد اختیار | سررسید | قیمت اعمال | پریمیوم | تعداد | اندازه');
+  if (!text) return;
+  const lines = text.trim().split('\n');
+  let added = 0;
+  for (const line of lines) {
+    const parts = line.split('\t');
+    if (parts.length < 9) continue;
+    const direction = parts[0].trim(), type = parts[1].trim().toLowerCase();
+    const symbol = parts[2].trim(), option = parts[3].trim(), expiry = parts[4].trim();
+    const strike = Number(String(parts[5]).replace(/,/g, '')) || 0;
+    const premium = Number(String(parts[6]).replace(/,/g, '')) || 0;
+    const qty = Number(String(parts[7]).replace(/,/g, '')) || 0;
+    const size = Number(String(parts[8]).replace(/,/g, '')) || 1000;
+    if (!direction || !type) continue;
+    const normDir = normalizeDirection(direction) || 'خرید';
+    const normType = (type.includes('call') || type.includes('کال')) ? 'call' : 'put';
+    state.trades.push({ id: genId(), direction: normDir, type: normType, symbol, option, expiry, strike, premium, qty, size });
+    added++;
+  }
+  saveToStorage(); render();
+  alert(`✅ ${added} معامله اضافه شد`);
+}
+function renderSettings() { document.getElementById('cashInput').value = state.settings.cash || 0; document.getElementById('marginInput').value = state.settings.marginPercent || 20; }
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'option_' + new Date().toISOString().split('T')[0] + '.json'; a.click(); URL.revokeObjectURL(url);
+}
+function importData(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => { try { const data = JSON.parse(e.target.result); state.trades = data.trades || data.positions || []; state.strategyLegs = data.strategyLegs || []; state.strategyMeta = data.strategyMeta || { symbol: '', expiry: '', currentPrice: 0 }; state.settings = data.settings || { cash: 0, marginPercent: 20 }; state.archivedItems = data.archivedItems || []; saveToStorage(); render(); renderStrategyMeta(); alert('✅ بارگذاری شد'); } catch(err) { alert('❌ ' + err.message); } };
+  reader.readAsText(file);
+}
+function switchTab(name, ev) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  if (ev && ev.target) ev.target.classList.add('active');
+  if (name === 'strategy') { renderStrategyMeta(); setTimeout(renderStrategyChart, 80); }
+  if (name === 'dashboard') { setTimeout(() => renderDashboard(cachedOpenLots, cachedClosedLots), 80); }
+  if (name === 'diagnose') { setTimeout(renderDiagnose, 50); }
+  if (name === 'sync') { ghUpdateStatus(); }
+}
+
+// ===== Initialize =====
+loadFromStorage();
+render();
+renderStrategyMeta();
+
+// تنظیم اولیه فرم GitHub
+(function initGhForm() {
+  if (ghConfig.username) document.getElementById('ghUsername').value = ghConfig.username;
+  if (ghConfig.repo) document.getElementById('ghRepo').value = ghConfig.repo;
+  if (ghConfig.token) document.getElementById('ghToken').value = ghConfig.token;
+  if (ghConfig.autoSync) {
+    document.getElementById('ghAutoSync').checked = true;
+    setTimeout(() => ghToggleAutoSync(), 500);
+  }
+  ghUpdateStatus();
+})();
+</script>
+</body>
+</html>
